@@ -2767,7 +2767,7 @@ void kill_screen(const char* lcd_msg) {
         #endif
 
         // Set movement on a single axis
-        set_destination_to_current();
+        //set_destination_to_current();
         destination[manual_move_axis] += manual_move_offset;
 
         // Reset for the next move
