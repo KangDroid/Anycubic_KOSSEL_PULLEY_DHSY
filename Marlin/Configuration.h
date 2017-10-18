@@ -496,18 +496,27 @@
   #endif
 
   // Print surface diameter/2 minus unreachable space (avoid collisions with vertical towers).
-  #define DELTA_PRINTABLE_RADIUS 90 // mm
+  #define DELTA_PRINTABLE_RADIUS 90.0 // mm
 
   // Center-to-center distance of the holes in the diagonal push rods.
-  #define DELTA_DIAGONAL_ROD 217 // mm
+  #define DELTA_DIAGONAL_ROD 217.0 // mm
 
   // height from z=0 to home position
-  #define DELTA_HEIGHT 337 // get this value from auto calibrate
+  #define DELTA_HEIGHT 337.0 // get this value from auto calibrate
 
   #define DELTA_ENDSTOP_ADJ { 0.0, 0.0, 0.0 } // get these from auto calibrate
 
+// Horizontal offset from middle of printer to smooth rod center.
+#define DELTA_SMOOTH_ROD_OFFSET 150.0 // mm
+
+// Horizontal offset of the universal joints on the end effector.
+#define DELTA_EFFECTOR_OFFSET 31.0 // mm
+
+// Horizontal offset of the universal joints on the carriages.
+#define DELTA_CARRIAGE_OFFSET 20.6 // mm
+
   // Horizontal distance bridged by diagonal push rods when effector is centered.
-  #define DELTA_RADIUS 124.0 //mm  Get this value from auto calibrate
+  #define DELTA_RADIUS (DELTA_SMOOTH_ROD_OFFSET-DELTA_EFFECTOR_OFFSET-DELTA_CARRIAGE_OFFSET) //mm  Get this value from auto calibrate
 
   // Trim adjustments for individual towers
   // tower angle corrections for X and Y tower / rotate XYZ so Z tower angle = 0
