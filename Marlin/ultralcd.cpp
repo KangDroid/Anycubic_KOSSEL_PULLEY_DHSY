@@ -1945,6 +1945,7 @@ void kill_screen(const char* lcd_msg) {
         set_z_fade_height(planner.z_fade_height);
         MENU_MULTIPLIER_ITEM_EDIT_CALLBACK(float62, MSG_Z_FADE_HEIGHT, &planner.z_fade_height, 0.0, 100.0, _lcd_set_z_fade_height);
       #endif
+	  
 
       //
       // MBL Z Offset
@@ -1953,7 +1954,7 @@ void kill_screen(const char* lcd_msg) {
         MENU_ITEM_EDIT(float43, MSG_BED_Z, &mbl.z_offset, -1, 1);
       #endif
 
-      #if ENABLED(BABYSTEP_ZPROBE_OFFSET)
+      #if ENABLED(BABYSTEP_ZPROBE_OFFSET) //Using
         MENU_ITEM(submenu, MSG_ZPROBE_ZOFFSET, lcd_babystep_zoffset);
       #elif HAS_BED_PROBE
         MENU_ITEM_EDIT_CALLBACK(float32, MSG_ZPROBE_ZOFFSET, &zprobe_zoffset, Z_PROBE_OFFSET_RANGE_MIN, Z_PROBE_OFFSET_RANGE_MAX, lcd_refresh_zprobe_zoffset);
@@ -1967,7 +1968,7 @@ void kill_screen(const char* lcd_msg) {
           MENU_ITEM(function, MSG_LEVEL_CORNERS, _lcd_level_bed_corners);
       #endif
 
-      #if ENABLED(EEPROM_SETTINGS)
+      #if ENABLED(EEPROM_SETTINGS) //using
         MENU_ITEM(function, MSG_LOAD_EEPROM, lcd_load_settings);
         MENU_ITEM(function, MSG_STORE_EEPROM, lcd_store_settings);
       #endif
