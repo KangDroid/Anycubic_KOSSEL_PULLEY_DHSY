@@ -502,12 +502,12 @@
   #define DELTA_DIAGONAL_ROD 217.0 // mm
 
   // height from z=0 to home position
-  #define DELTA_HEIGHT 337.0 // get this value from auto calibrate
+  #define DELTA_HEIGHT 336.8 // get this value from auto calibrate
 
   #define DELTA_ENDSTOP_ADJ { 0.0, 0.0, 0.0 } // get these from auto calibrate
 
 // Horizontal offset from middle of printer to smooth rod center.
-#define DELTA_SMOOTH_ROD_OFFSET 150.0 // mm
+#define DELTA_SMOOTH_ROD_OFFSET 149.0 // mm
 
 // Horizontal offset of the universal joints on the end effector.
 #define DELTA_EFFECTOR_OFFSET 31.0 // mm
@@ -1151,7 +1151,7 @@
 #endif
 
 // Delta only homes to Z
-#define HOMING_FEEDRATE_Z  (200*10)
+#define HOMING_FEEDRATE_Z  (400*10)
 
 //=============================================================================
 //============================= Additional Features ===========================
