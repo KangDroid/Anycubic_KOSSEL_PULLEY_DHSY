@@ -562,13 +562,19 @@ static uint8_t target_extruder;
   #define ADJUST_DELTA(V) NOOP
 #endif
 
+#if ENABLED(X_DUAL_ENDSTOPS)
+  float x_endstop_adj;                // Initialized by settings.load()
+#endif
+#if ENABLED(Y_DUAL_ENDSTOPS)
+  float y_endstop_adj;                // Initialized by settings.load()
+#endif
 #if ENABLED(Z_DUAL_ENDSTOPS)
-  float z_endstop_adj;
+  float z_endstop_adj;                // Initialized by settings.load()
 #endif
 
 // Extruder offsets
 #if HOTENDS > 1
-  float hotend_offset[XYZ][HOTENDS]; // Initialized by settings.load()
+  float hotend_offset[XYZ][HOTENDS];  // Initialized by settings.load()
 #endif
 
 #if HAS_Z_SERVO_ENDSTOP
@@ -3017,9 +3023,15 @@ static void homeaxis(const AxisEnum axis) {
     if (axis == Z_AXIS && DEPLOY_PROBE()) return;
   #endif
 
-  // Set a flag for Z motor locking
+  // Set flags for X, Y, Z motor locking
+  #if ENABLED(X_DUAL_ENDSTOPS)
+    if (axis == X_AXIS) stepper.set_homing_flag_x(true);
+  #endif
+  #if ENABLED(Y_DUAL_ENDSTOPS)
+    if (axis == Y_AXIS) stepper.set_homing_flag_y(true);
+  #endif
   #if ENABLED(Z_DUAL_ENDSTOPS)
-    if (axis == Z_AXIS) stepper.set_homing_flag(true);
+    if (axis == Z_AXIS) stepper.set_homing_flag_z(true);
   #endif
 
   // Disable stealthChop if used. Enable diag1 pin on driver.
@@ -3061,25 +3073,41 @@ static void homeaxis(const AxisEnum axis) {
     do_homing_move(axis, 2 * bump, get_homing_bump_feedrate(axis));
   }
 
-  #if ENABLED(Z_DUAL_ENDSTOPS)
-    if (axis == Z_AXIS) {
-      float adj = FABS(z_endstop_adj);
-      bool lockZ1;
-      if (axis_home_dir > 0) {
-        adj = -adj;
-        lockZ1 = (z_endstop_adj > 0);
+  /**
+   * Home axes that have dual endstops... differently
+   */
+  #if ENABLED(X_DUAL_ENDSTOPS) || ENABLED(Y_DUAL_ENDSTOPS) || ENABLED(Z_DUAL_ENDSTOPS)
+    const bool pos_dir = axis_home_dir > 0;
+    #if ENABLED(X_DUAL_ENDSTOPS)
+      if (axis == X_AXIS) {
+        const bool lock_x1 = pos_dir ? (x_endstop_adj > 0) : (x_endstop_adj < 0);
+        const float adj = FABS(x_endstop_adj);
+        if (lock_x1) stepper.set_x_lock(true); else stepper.set_x2_lock(true);
+        do_homing_move(axis, pos_dir ? -adj : adj);
+        if (lock_x1) stepper.set_x_lock(false); else stepper.set_x2_lock(false);
+        stepper.set_homing_flag_x(false);
       }
-      else
-        lockZ1 = (z_endstop_adj < 0);
-
-      if (lockZ1) stepper.set_z_lock(true); else stepper.set_z2_lock(true);
-
-      // Move to the adjusted endstop height
-      do_homing_move(axis, adj);
-
-      if (lockZ1) stepper.set_z_lock(false); else stepper.set_z2_lock(false);
-      stepper.set_homing_flag(false);
-    } // Z_AXIS
+    #endif
+    #if ENABLED(Y_DUAL_ENDSTOPS)
+      if (axis == Y_AXIS) {
+        const bool lock_y1 = pos_dir ? (y_endstop_adj > 0) : (y_endstop_adj < 0);
+        const float adj = FABS(y_endstop_adj);
+        if (lock_y1) stepper.set_y_lock(true); else stepper.set_y2_lock(true);
+        do_homing_move(axis, pos_dir ? -adj : adj);
+        if (lock_y1) stepper.set_y_lock(false); else stepper.set_y2_lock(false);
+        stepper.set_homing_flag_y(false);
+      }
+    #endif
+    #if ENABLED(Z_DUAL_ENDSTOPS)
+      if (axis == Z_AXIS) {
+        const bool lock_z1 = pos_dir ? (z_endstop_adj > 0) : (z_endstop_adj < 0);
+        const float adj = FABS(z_endstop_adj);
+        if (lock_z1) stepper.set_z_lock(true); else stepper.set_z2_lock(true);
+        do_homing_move(axis, pos_dir ? -adj : adj);
+        if (lock_z1) stepper.set_z_lock(false); else stepper.set_z2_lock(false);
+        stepper.set_homing_flag_z(false);
+      }
+    #endif
   #endif
 
   #if IS_SCARA
@@ -5433,7 +5461,7 @@ void home_all_axes() { gcode_G28(true); }
                     dy = (Y_PROBE_OFFSET_FROM_EXTRUDER);
       #endif
 
-      for (uint8_t i = 0; i < COUNT(z_at_pt); i++) z_at_pt[i] = 0.0;
+      for (uint8_t i = 0; i <= 12; i++) z_at_pt[i] = 0.0;
     
       if (!_0p_calibration) {
     
@@ -5446,7 +5474,7 @@ void home_all_axes() { gcode_G28(true); }
         }
 
         if (_7p_calibration) { // probe extra center points
-          for (int8_t axis = _7p_multi_circle ? COUNT(z_at_pt) - 2 : COUNT(z_at_pt) - 4; axis > 0; axis -= _7p_multi_circle ? 2 : 4) {
+          for (int8_t axis = _7p_multi_circle ? 11 : 9; axis > 0; axis -= _7p_multi_circle ? 2 : 4) {
             const float a = RADIANS(180 + 30 * axis), r = delta_calibration_radius * 0.1;
             #if ENABLED(PROBE_MANUALLY)
               z_at_pt[0] += lcd_probe_pt(cos(a) * r, sin(a) * r);
@@ -5461,7 +5489,7 @@ void home_all_axes() { gcode_G28(true); }
           bool zig_zag = true;
           const uint8_t start = _4p_opposite_points ? 3 : 1,
                         step = _4p_calibration ? 4 : _7p_half_circle ? 2 : 1;
-          for (uint8_t axis = start; axis < COUNT(z_at_pt); axis += step) {
+          for (uint8_t axis = start; axis <= 12; axis += step) {
             const float zigadd = (zig_zag ? 0.5 : 0.0),
                         offset_circles = _7p_quadruple_circle ? zigadd + 1.0 :
                                          _7p_triple_circle    ? zigadd + 0.5 :
@@ -5481,14 +5509,14 @@ void home_all_axes() { gcode_G28(true); }
         }
 
         if (_7p_intermed_points) // average intermediates to tower and opposites
-          for (uint8_t axis = 1; axis < COUNT(z_at_pt); axis += 2)
+          for (uint8_t axis = 1; axis <= 12; axis += 2)
             z_at_pt[axis] = (z_at_pt[axis] + (z_at_pt[axis + 1] + z_at_pt[(axis + 10) % 12 + 1]) / 2.0) / 2.0;
 
         float S1 = z_at_pt[0],
               S2 = sq(z_at_pt[0]);
         int16_t N = 1;
         if (!_1p_calibration) // std dev from zero plane
-          for (uint8_t axis = (_4p_opposite_points ? 3 : 1); axis < COUNT(z_at_pt); axis += (_4p_calibration ? 4 : 2)) {
+          for (uint8_t axis = (_4p_opposite_points ? 3 : 1); axis <= 12; axis += (_4p_calibration ? 4 : 2)) {
             S1 += z_at_pt[axis];
             S2 += sq(z_at_pt[axis]);
             N++;
@@ -5530,7 +5558,7 @@ void home_all_axes() { gcode_G28(true); }
           SERIAL_EOL();
 
           probe_G33_points(z_at_pt, 3, true, false);
-          for (int8_t i = 0; i < COUNT(z_at_pt); i++) z_at_pt[i] -= z_at_pt_base[i];
+          for (int8_t i = 0; i <= 12; i++) z_at_pt[i] -= z_at_pt_base[i];
           print_G33_results(z_at_pt, true, true);
           delta_endstop_adj[axis] += 1.0;
           switch (axis) {
@@ -5560,7 +5588,7 @@ void home_all_axes() { gcode_G28(true); }
           SERIAL_PROTOCOL(zig_zag == -1 ? "-" : "+");
           SERIAL_EOL();
           probe_G33_points(z_at_pt, 3, true, false);
-          for (int8_t i = 0; i < COUNT(z_at_pt); i++) z_at_pt[i] -= z_at_pt_base[i];
+          for (int8_t i = 0; i <= 12; i++) z_at_pt[i] -= z_at_pt_base[i];
           print_G33_results(z_at_pt, true, true);
           delta_radius -= 1.0 * zig_zag;
           recalc_delta_settings(delta_radius, delta_diagonal_rod, delta_tower_angle_trim);
@@ -5587,7 +5615,7 @@ void home_all_axes() { gcode_G28(true); }
           SERIAL_EOL();
 
           probe_G33_points(z_at_pt, 3, true, false);
-          for (int8_t i = 0; i < COUNT(z_at_pt); i++) z_at_pt[i] -= z_at_pt_base[i];
+          for (int8_t i = 0; i <= 12; i++) z_at_pt[i] -= z_at_pt_base[i];
           print_G33_results(z_at_pt, true, true);
 
           delta_tower_angle_trim[axis] -= 1.0;
@@ -8894,14 +8922,28 @@ inline void gcode_M205() {
     }
   }
 
-#elif ENABLED(Z_DUAL_ENDSTOPS) // !DELTA && ENABLED(Z_DUAL_ENDSTOPS)
+
+
+#elif ENABLED(X_DUAL_ENDSTOPS) || ENABLED(Y_DUAL_ENDSTOPS) || ENABLED(Z_DUAL_ENDSTOPS)
 
   /**
    * M666: For Z Dual Endstop setup, set z axis offset to the z2 axis.
    */
   inline void gcode_M666() {
-    if (parser.seen('Z')) z_endstop_adj = parser.value_linear_units();
-    SERIAL_ECHOLNPAIR("Z Endstop Adjustment set to (mm):", z_endstop_adj);
+    SERIAL_ECHOPGM("Dual Endstop Adjustment (mm): ");
+    #if ENABLED(X_DUAL_ENDSTOPS)
+      if (parser.seen('X')) x_endstop_adj = parser.value_linear_units();
+      SERIAL_ECHOPAIR(" X", x_endstop_adj);
+    #endif
+    #if ENABLED(Y_DUAL_ENDSTOPS)
+      if (parser.seen('Y')) y_endstop_adj = parser.value_linear_units();
+      SERIAL_ECHOPAIR(" Y", y_endstop_adj);
+    #endif
+    #if ENABLED(Z_DUAL_ENDSTOPS)
+      if (parser.seen('Z')) z_endstop_adj = parser.value_linear_units();
+      SERIAL_ECHOPAIR(" Z", z_endstop_adj);
+    #endif
+    SERIAL_EOL();
   }
 
 #endif // !DELTA && Z_DUAL_ENDSTOPS
@@ -11606,7 +11648,7 @@ void process_next_command() {
           break;
       #endif
 
-      #if ENABLED(DELTA) || ENABLED(Z_DUAL_ENDSTOPS)
+      #if ENABLED(DELTA) || ENABLED(X_DUAL_ENDSTOPS) || ENABLED(Y_DUAL_ENDSTOPS) || ENABLED(Z_DUAL_ENDSTOPS)
         case 666: // M666: Set delta or dual endstop adjustment
           gcode_M666();
           break;
@@ -13949,4 +13991,3 @@ void loop() {
   endstops.report_state();
   idle();
 }
-
