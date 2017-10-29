@@ -32,7 +32,7 @@
  */
 #ifndef CONFIGURATION_ADV_H
 #define CONFIGURATION_ADV_H
-#define CONFIGURATION_ADV_H_VERSION 010100
+#define CONFIGURATION_ADV_H_VERSION 010107
 
 // @section temperature
 
@@ -257,6 +257,50 @@
 
 //#define Z_LATE_ENABLE // Enable Z the last moment. Needed if your Z driver overheats.
 
+/**
+ * Dual Steppers / Dual Endstops
+ *
+ * This section will allow you to use extra E drivers to drive a second motor for X, Y, or Z axes.
+ *
+ * For example, set X_DUAL_STEPPER_DRIVERS setting to use a second motor. If the motors need to
+ * spin in opposite directions set INVERT_X2_VS_X_DIR. If the second motor needs its own endstop
+ * set X_DUAL_ENDSTOPS. This can adjust for "racking." Use X2_USE_ENDSTOP to set the endstop plug
+ * that should be used for the second endstop. Extra endstops will appear in the output of 'M119'.
+ *
+ * Use X_DUAL_ENDSTOP_ADJUSTMENT to adjust for mechanical imperfection. After homing both motors
+ * this offset is applied to the X2 motor. To find the offset home the X axis, and measure the error
+ * in X2. Dual endstop offsets can be set at runtime with 'M666 X<offset> Y<offset> Z<offset>'.
+ */
+
+//#define X_DUAL_STEPPER_DRIVERS
+#if ENABLED(X_DUAL_STEPPER_DRIVERS)
+  #define INVERT_X2_VS_X_DIR true   // Set 'true' if X motors should rotate in opposite directions
+  //#define X_DUAL_ENDSTOPS
+  #if ENABLED(X_DUAL_ENDSTOPS)
+    #define X2_USE_ENDSTOP _XMAX_
+    #define X_DUAL_ENDSTOPS_ADJUSTMENT  0
+  #endif
+#endif
+
+//#define Y_DUAL_STEPPER_DRIVERS
+#if ENABLED(Y_DUAL_STEPPER_DRIVERS)
+  #define INVERT_Y2_VS_Y_DIR true   // Set 'true' if Y motors should rotate in opposite directions
+  //#define Y_DUAL_ENDSTOPS
+  #if ENABLED(Y_DUAL_ENDSTOPS)
+    #define Y2_USE_ENDSTOP _YMAX_
+    #define Y_DUAL_ENDSTOPS_ADJUSTMENT  0
+  #endif
+#endif
+
+//#define Z_DUAL_STEPPER_DRIVERS
+#if ENABLED(Z_DUAL_STEPPER_DRIVERS)
+  //#define Z_DUAL_ENDSTOPS
+  #if ENABLED(Z_DUAL_ENDSTOPS)
+    #define Z2_USE_ENDSTOP _XMAX_
+    #define Z_DUAL_ENDSTOPS_ADJUSTMENT  0
+  #endif
+#endif
+
 // Dual X Steppers
 // Uncomment this option to drive two X axis motors.
 // The next unused E driver will be assigned to the second X stepper.
@@ -436,8 +480,21 @@
 #define DIGIPOT_MOTOR_CURRENT { 135,135,135,135,135 }   // Values 0-255 (RAMBO 135 = ~0.75A, 185 = ~1A)
 //#define DAC_MOTOR_CURRENT_DEFAULT { 70, 80, 90, 80 }    // Default drive percent - X, Y, Z, E axis
 
-// Uncomment to enable an I2C based DIGIPOT like on the Azteeg X3 Pro
+// Use an I2C based DIGIPOT (e.g., Azteeg X3 Pro)
 //#define DIGIPOT_I2C
+#if ENABLED(DIGIPOT_I2C) && !defined(DIGIPOT_I2C_ADDRESS_A)
+  /**
+   * Common slave addresses:
+   *
+   *                    A   (A shifted)   B   (B shifted)  IC
+   * Smoothie          0x2C (0x58)       0x2D (0x5A)       MCP4451
+   * AZTEEG_X3_PRO     0x2C (0x58)       0x2E (0x5C)       MCP4451
+   * MIGHTYBOARD_REVE  0x2F (0x5E)                         MCP4018
+   */
+  #define DIGIPOT_I2C_ADDRESS_A 0x2C  // unshifted slave address for first DIGIPOT
+  #define DIGIPOT_I2C_ADDRESS_B 0x2D  // unshifted slave address for second DIGIPOT
+#endif
+
 //#define DIGIPOT_MCP4018          // Requires library from https://github.com/stawel/SlowSoftI2CMaster
 #define DIGIPOT_I2C_NUM_CHANNELS 8 // 5DPRINT: 4     AZTEEG_X3_PRO: 8
 // Actual motor currents in Amps, need as many here as DIGIPOT_I2C_NUM_CHANNELS
@@ -477,12 +534,14 @@
   // Note: This is always disabled for ULTIPANEL (except ELB_FULL_GRAPHIC_CONTROLLER).
   #define SD_DETECT_INVERTED
 
-  #define SD_FINISHED_STEPPERRELEASE true  //if sd support and the file is finished: disable steppers?
+  #define SD_FINISHED_STEPPERRELEASE true          // Disable steppers when SD Print is finished
   #define SD_FINISHED_RELEASECOMMAND "M84 X Y Z E" // You might want to keep the z enabled so your bed stays in place.
 
-  #define SDCARD_RATHERRECENTFIRST  //reverse file order of sd card menu display. Its sorted practically after the file system block order.
-  // if a file is deleted, it frees a block. hence, the order is not purely chronological. To still have auto0.g accessible, there is again the option to do that.
-  // using:
+  // Reverse SD sort to show "more recent" files first, according to the card's FAT.
+  // Since the FAT gets out of order with usage, SDCARD_SORT_ALPHA is recommended.
+  #define SDCARD_RATHERRECENTFIRST
+
+  // Add an option in the menu to run all auto#.g files
   //#define MENU_ADDAUTOSTART
 
   /**
@@ -548,10 +607,19 @@
   // Enable this option to scroll long filenames in the SD card menu
   //#define SCROLL_LONG_FILENAMES
 
-  // This option allows you to abort SD printing when any endstop is triggered.
-  // This feature must be enabled with "M540 S1" or from the LCD menu.
-  // To have any effect, endstops must be enabled during SD printing.
+  /**
+   * This option allows you to abort SD printing when any endstop is triggered.
+   * This feature must be enabled with "M540 S1" or from the LCD menu.
+   * To have any effect, endstops must be enabled during SD printing.
+   */
   //#define ABORT_ON_ENDSTOP_HIT_FEATURE_ENABLED
+
+  /**
+   * This option makes it easier to print the same SD Card file again.
+   * On print completion the LCD Menu will open with the file selected.
+   * You can just click to start the print, or navigate elsewhere.
+   */
+  //#define SD_REPRINT_LAST_SELECTED_FILE
 
 #endif // SDSUPPORT
 
@@ -672,69 +740,12 @@
   #define SCARA_PRINTABLE_RADIUS (SCARA_LINKAGE_1 + SCARA_LINKAGE_2)
 #endif
 
-// Default mesh area is an area with an inset margin on the print area.
-// Below are the macros that are used to define the borders for the mesh area,
-// made available here for specialized needs, ie dual extruder setup.
-#if ENABLED(MESH_BED_LEVELING)
-  #if ENABLED(DELTA)
-    // Probing points may be verified at compile time within the radius
-    // using static_assert(HYPOT2(X2-X1,Y2-Y1)<=sq(DELTA_PRINTABLE_RADIUS),"bad probe point!")
-    // so that may be added to SanityCheck.h in the future.
-    #define MESH_MIN_X (X_CENTER - (DELTA_PROBEABLE_RADIUS) + MESH_INSET)
-    #define MESH_MIN_Y (Y_CENTER - (DELTA_PROBEABLE_RADIUS) + MESH_INSET)
-    #define MESH_MAX_X (X_CENTER +  DELTA_PROBEABLE_RADIUS - (MESH_INSET))
-    #define MESH_MAX_Y (Y_CENTER +  DELTA_PROBEABLE_RADIUS - (MESH_INSET))
-  #elif IS_SCARA
-    #define MESH_MIN_X (X_CENTER - (SCARA_PRINTABLE_RADIUS) + MESH_INSET)
-    #define MESH_MIN_Y (Y_CENTER - (SCARA_PRINTABLE_RADIUS) + MESH_INSET)
-    #define MESH_MAX_X (X_CENTER +  SCARA_PRINTABLE_RADIUS - (MESH_INSET))
-    #define MESH_MAX_Y (Y_CENTER +  SCARA_PRINTABLE_RADIUS - (MESH_INSET))
-  #else
-    // Boundaries for Cartesian probing based on set limits
-    #if ENABLED(BED_CENTER_AT_0_0)
-      #define MESH_MIN_X (max(MESH_INSET, 0) - (X_BED_SIZE) / 2)
-      #define MESH_MIN_Y (max(MESH_INSET, 0) - (Y_BED_SIZE) / 2)
-      #define MESH_MAX_X (min(X_BED_SIZE - (MESH_INSET), X_BED_SIZE) - (X_BED_SIZE) / 2)
-      #define MESH_MAX_Y (min(Y_BED_SIZE - (MESH_INSET), Y_BED_SIZE) - (Y_BED_SIZE) / 2)
-    #else
-      #define MESH_MIN_X (max(X_MIN_POS + MESH_INSET, 0))
-      #define MESH_MIN_Y (max(Y_MIN_POS + MESH_INSET, 0))
-      #define MESH_MAX_X (min(X_MAX_POS - (MESH_INSET), X_BED_SIZE))
-      #define MESH_MAX_Y (min(Y_MAX_POS - (MESH_INSET), Y_BED_SIZE))
-    #endif
-  #endif
-#elif ENABLED(AUTO_BED_LEVELING_UBL)
-  #if ENABLED(DELTA)
-    // Probing points may be verified at compile time within the radius
-    // using static_assert(HYPOT2(X2-X1,Y2-Y1)<=sq(DELTA_PRINTABLE_RADIUS),"bad probe point!")
-    // so that may be added to SanityCheck.h in the future.
-    #define UBL_MESH_MIN_X (X_CENTER - (DELTA_PROBEABLE_RADIUS) + UBL_MESH_INSET)
-    #define UBL_MESH_MIN_Y (Y_CENTER - (DELTA_PROBEABLE_RADIUS) + UBL_MESH_INSET)
-    #define UBL_MESH_MAX_X (X_CENTER +  DELTA_PROBEABLE_RADIUS - (UBL_MESH_INSET))
-    #define UBL_MESH_MAX_Y (Y_CENTER +  DELTA_PROBEABLE_RADIUS - (UBL_MESH_INSET))
-  #elif IS_SCARA
-    #define UBL_MESH_MIN_X (X_CENTER - (SCARA_PRINTABLE_RADIUS) + UBL_MESH_INSET)
-    #define UBL_MESH_MIN_Y (Y_CENTER - (SCARA_PRINTABLE_RADIUS) + UBL_MESH_INSET)
-    #define UBL_MESH_MAX_X (X_CENTER +  SCARA_PRINTABLE_RADIUS - (UBL_MESH_INSET))
-    #define UBL_MESH_MAX_Y (Y_CENTER +  SCARA_PRINTABLE_RADIUS - (UBL_MESH_INSET))
-  #else
-    // Boundaries for Cartesian probing based on set limits
-    #if ENABLED(BED_CENTER_AT_0_0)
-      #define UBL_MESH_MIN_X (max(UBL_MESH_INSET, 0) - (X_BED_SIZE) / 2)
-      #define UBL_MESH_MIN_Y (max(UBL_MESH_INSET, 0) - (Y_BED_SIZE) / 2)
-      #define UBL_MESH_MAX_X (min(X_BED_SIZE - (UBL_MESH_INSET), X_BED_SIZE) - (X_BED_SIZE) / 2)
-      #define UBL_MESH_MAX_Y (min(Y_BED_SIZE - (UBL_MESH_INSET), Y_BED_SIZE) - (Y_BED_SIZE) / 2)
-    #else
-      #define UBL_MESH_MIN_X (max(X_MIN_POS + UBL_MESH_INSET, 0))
-      #define UBL_MESH_MIN_Y (max(Y_MIN_POS + UBL_MESH_INSET, 0))
-      #define UBL_MESH_MAX_X (min(X_MAX_POS - (UBL_MESH_INSET), X_BED_SIZE))
-      #define UBL_MESH_MAX_Y (min(Y_MAX_POS - (UBL_MESH_INSET), Y_BED_SIZE))
-    #endif
-  #endif
-
-  // If this is defined, the currently active mesh will be saved in the
-  // current slot on M500.
-  #define UBL_SAVE_ACTIVE_ON_M500
+#if ENABLED(MESH_BED_LEVELING) || ENABLED(AUTO_BED_LEVELING_UBL)
+  // Override the mesh area if the automatic (max) area is too large
+  //#define MESH_MIN_X MESH_INSET
+  //#define MESH_MIN_Y MESH_INSET
+  //#define MESH_MAX_X X_BED_SIZE - (MESH_INSET)
+  //#define MESH_MAX_Y Y_BED_SIZE - (MESH_INSET)
 #endif
 
 // @section extras
