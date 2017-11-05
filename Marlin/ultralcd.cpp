@@ -715,14 +715,7 @@ void lcd_reset_status() { lcd_setstatusPGM(PSTR(""), -1); }
 void kill_screen(const char* lcd_msg) {
   lcd_init();
   lcd_setalertstatusPGM(lcd_msg);
-  #if ENABLED(DOGLCD)
-    u8g.firstPage();
-    do {
-      lcd_kill_screen();
-    } while (u8g.nextPage());
-  #else
-    lcd_kill_screen();
-  #endif
+  lcd_kill_screen();
 }
 
 #if ENABLED(ULTIPANEL)
@@ -1680,7 +1673,7 @@ void kill_screen(const char* lcd_msg) {
      */
     static int8_t bed_corner;
     void _lcd_goto_next_corner() {
-      line_to_z(LOGICAL_Z_POSITION(4.0));
+      line_to_z(4.0);
       switch (bed_corner) {
         case 0:
           current_position[X_AXIS] = X_MIN_BED + 10;
@@ -1697,7 +1690,7 @@ void kill_screen(const char* lcd_msg) {
           break;
       }
       planner.buffer_line_kinematic(current_position, MMM_TO_MMS(manual_feedrate_mm_m[X_AXIS]), active_extruder);
-      line_to_z(LOGICAL_Z_POSITION(0.0));
+      line_to_z(0.0);
       if (++bed_corner > 3) bed_corner = 0;
     }
 
@@ -1743,7 +1736,7 @@ void kill_screen(const char* lcd_msg) {
     //
     void _lcd_after_probing() {
       #if MANUAL_PROBE_HEIGHT > 0
-        line_to_z(LOGICAL_Z_POSITION(Z_MIN_POS) + MANUAL_PROBE_HEIGHT);
+        line_to_z(Z_MIN_POS + MANUAL_PROBE_HEIGHT);
       #endif
       // Display "Done" screen and wait for moves to complete
       #if MANUAL_PROBE_HEIGHT > 0 || ENABLED(MESH_BED_LEVELING)
@@ -1758,13 +1751,13 @@ void kill_screen(const char* lcd_msg) {
     #if ENABLED(MESH_BED_LEVELING)
 
       // Utility to go to the next mesh point
-      inline void _manual_probe_goto_xy(float x, float y) {
+      inline void _manual_probe_goto_xy(const float rx, const float ry) {
         #if MANUAL_PROBE_HEIGHT > 0
           const float prev_z = current_position[Z_AXIS];
-          line_to_z(LOGICAL_Z_POSITION(Z_MIN_POS) + MANUAL_PROBE_HEIGHT);
+          line_to_z(Z_MIN_POS + MANUAL_PROBE_HEIGHT);
         #endif
-        current_position[X_AXIS] = LOGICAL_X_POSITION(x);
-        current_position[Y_AXIS] = LOGICAL_Y_POSITION(y);
+        current_position[X_AXIS] = rx;
+        current_position[Y_AXIS] = ry;
         planner.buffer_line_kinematic(current_position, MMM_TO_MMS(XY_PROBE_SPEED), active_extruder);
         #if MANUAL_PROBE_HEIGHT > 0
           line_to_z(prev_z);
@@ -1895,8 +1888,8 @@ void kill_screen(const char* lcd_msg) {
 
         // Controls the loop until the move is done
         _manual_probe_goto_xy(
-          LOGICAL_X_POSITION(mbl.index_to_xpos[px]),
-          LOGICAL_Y_POSITION(mbl.index_to_ypos[py])
+          mbl.index_to_xpos[px],
+          mbl.index_to_ypos[py]
         );
 
         // After the blocking function returns, change menus
@@ -2375,8 +2368,8 @@ void kill_screen(const char* lcd_msg) {
      * UBL LCD Map Movement
      */
     void ubl_map_move_to_xy() {
-      current_position[X_AXIS] = LOGICAL_X_POSITION(pgm_read_float(&ubl._mesh_index_to_xpos[x_plot]));
-      current_position[Y_AXIS] = LOGICAL_Y_POSITION(pgm_read_float(&ubl._mesh_index_to_ypos[y_plot]));
+      current_position[X_AXIS] = pgm_read_float(&ubl._mesh_index_to_xpos[x_plot]);
+      current_position[Y_AXIS] = pgm_read_float(&ubl._mesh_index_to_ypos[y_plot]);
       planner.buffer_line_kinematic(current_position, MMM_TO_MMS(XY_PROBE_SPEED), active_extruder);
     }
 
@@ -2710,26 +2703,24 @@ void kill_screen(const char* lcd_msg) {
       lcd_goto_screen(_lcd_calibrate_homing);
     }
 
-    void _man_probe_pt(const float &lx, const float &ly) {
+    void _man_probe_pt(const float rx, const float ry) {
       #if HAS_LEVELING
         reset_bed_level(); // After calibration bed-level data is no longer valid
       #endif
 
-      float z_dest = LOGICAL_Z_POSITION((Z_CLEARANCE_BETWEEN_PROBES) + (DELTA_PRINTABLE_RADIUS) / 5);
-      line_to_z(z_dest);
-      current_position[X_AXIS] = LOGICAL_X_POSITION(lx);
-      current_position[Y_AXIS] = LOGICAL_Y_POSITION(ly);
+      line_to_z((Z_CLEARANCE_BETWEEN_PROBES) + (DELTA_PRINTABLE_RADIUS) / 5);
+      current_position[X_AXIS] = rx;
+      current_position[Y_AXIS] = ry;
       line_to_current_z();
-      z_dest = LOGICAL_Z_POSITION(Z_CLEARANCE_BETWEEN_PROBES);
-      line_to_z(z_dest);
+      line_to_z(Z_CLEARANCE_BETWEEN_PROBES);
 
       lcd_synchronize();
       move_menu_scale = PROBE_MANUALLY_STEP;
       lcd_goto_screen(lcd_move_z);
     }
 
-    float lcd_probe_pt(const float &lx, const float &ly) {
-      _man_probe_pt(lx, ly);
+    float lcd_probe_pt(const float &rx, const float &ry) {
+      _man_probe_pt(rx, ry);
       KEEPALIVE_STATE(PAUSED_FOR_USER);
       defer_return_to_status = true;
       wait_for_user = true;
@@ -2910,6 +2901,7 @@ void kill_screen(const char* lcd_msg) {
               max = soft_endstop_max[Z_AXIS];
             #endif
             break;
+          default: break;
         }
       #endif // MIN_SOFTWARE_ENDSTOPS || MAX_SOFTWARE_ENDSTOPS
 
@@ -3755,24 +3747,36 @@ void kill_screen(const char* lcd_msg) {
      * "Print from SD" submenu
      *
      */
+
     #if ENABLED(SD_REPRINT_LAST_SELECTED_FILE)
-      uint32_t saved_encoderPosition = 0;
-      static millis_t assume_print_finished = 0;
+      uint32_t last_sdfile_encoderPosition = 0xFFFF;
+
+      void lcd_reselect_last_file() {
+        if (last_sdfile_encoderPosition == 0xFFFF) return;
+        #if ENABLED(DOGLCD)
+          // Some of this is a hack to force the screen update to work.
+          // TODO: Fix the real issue that causes this!
+          lcdDrawUpdate = LCDVIEW_CALL_REDRAW_NEXT;
+          _lcd_synchronize();
+          safe_delay(50);
+          _lcd_synchronize();
+          lcdDrawUpdate = LCDVIEW_CALL_REDRAW_NEXT;
+          drawing_screen = screen_changed = true;
+        #endif
+
+        lcd_goto_screen(lcd_sdcard_menu, last_sdfile_encoderPosition);
+        defer_return_to_status = true;
+        last_sdfile_encoderPosition = 0xFFFF;
+
+        #if ENABLED(DOGLCD)
+          lcd_update();
+        #endif
+      }
     #endif
 
     void lcd_sdcard_menu() {
       ENCODER_DIRECTION_MENUS();
-  
-      #if ENABLED(SD_REPRINT_LAST_SELECTED_FILE)
-        if (ELAPSED(millis(), assume_print_finished)) { // if the printer has been busy printing, lcd_sdcard_menu() should not 
-          lcdDrawUpdate = LCDVIEW_REDRAW_NOW;           // have been active for 5 seconds.  In this case, restore the previous
-          encoderPosition = saved_encoderPosition;      // encoderPosition to the last selected item.
-          assume_print_finished = millis() + 5000;
-        }
-        saved_encoderPosition = encoderPosition;
-        defer_return_to_status = true;
-      #endif
-      
+
       const uint16_t fileCnt = card.getnrfilenames();
       START_MENU();
       MENU_BACK(MSG_MAIN);
@@ -4324,31 +4328,29 @@ void kill_screen(const char* lcd_msg) {
   #if ENABLED(ADC_KEYPAD)
 
     inline bool handle_adc_keypad() {
-      static uint8_t adc_steps = 0;
+      #define ADC_MIN_KEY_DELAY 100
       if (buttons_reprapworld_keypad) {
-        if (adc_steps < 20) ++adc_steps;
-        lcd_quick_feedback();
         lcdDrawUpdate = LCDVIEW_REDRAW_NOW;
         if (encoderDirection == -1) { // side effect which signals we are inside a menu
           if      (buttons_reprapworld_keypad & EN_REPRAPWORLD_KEYPAD_DOWN)  encoderPosition -= ENCODER_STEPS_PER_MENU_ITEM;
           else if (buttons_reprapworld_keypad & EN_REPRAPWORLD_KEYPAD_UP)    encoderPosition += ENCODER_STEPS_PER_MENU_ITEM;
-          else if (buttons_reprapworld_keypad & EN_REPRAPWORLD_KEYPAD_LEFT)  menu_action_back();
-          else if (buttons_reprapworld_keypad & EN_REPRAPWORLD_KEYPAD_RIGHT) lcd_return_to_status();
+          else if (buttons_reprapworld_keypad & EN_REPRAPWORLD_KEYPAD_LEFT)  { menu_action_back(); lcd_quick_feedback(); }
+          else if (buttons_reprapworld_keypad & EN_REPRAPWORLD_KEYPAD_RIGHT) { lcd_return_to_status(); lcd_quick_feedback(); }
         }
         else {
-          const int8_t step = adc_steps > 19 ? 100 : adc_steps > 10 ? 10 : 1;
-               if (buttons_reprapworld_keypad & EN_REPRAPWORLD_KEYPAD_DOWN)  encoderPosition += ENCODER_PULSES_PER_STEP * step;
-          else if (buttons_reprapworld_keypad & EN_REPRAPWORLD_KEYPAD_UP)    encoderPosition -= ENCODER_PULSES_PER_STEP * step;
-          else if (buttons_reprapworld_keypad & EN_REPRAPWORLD_KEYPAD_RIGHT) encoderPosition = 0;
+          if (buttons_reprapworld_keypad & (EN_REPRAPWORLD_KEYPAD_DOWN|EN_REPRAPWORLD_KEYPAD_UP|EN_REPRAPWORLD_KEYPAD_RIGHT)) {
+                 if (buttons_reprapworld_keypad & EN_REPRAPWORLD_KEYPAD_DOWN)  encoderPosition += ENCODER_PULSES_PER_STEP;
+            else if (buttons_reprapworld_keypad & EN_REPRAPWORLD_KEYPAD_UP)    encoderPosition -= ENCODER_PULSES_PER_STEP;
+            else if (buttons_reprapworld_keypad & EN_REPRAPWORLD_KEYPAD_RIGHT) encoderPosition = 0;
+          }
         }
         #if ENABLED(ADC_KEYPAD_DEBUG)
           SERIAL_PROTOCOLLNPAIR("buttons_reprapworld_keypad = ", (uint32_t)buttons_reprapworld_keypad);
           SERIAL_PROTOCOLLNPAIR("encoderPosition = ", (uint32_t)encoderPosition);
         #endif
+        next_button_update_ms = millis() + ADC_MIN_KEY_DELAY;
         return true;
       }
-      else if (!thermalManager.current_ADCKey_raw)
-        adc_steps = 0; // reset stepping acceleration
 
       return false;
     }
@@ -4422,7 +4424,7 @@ void kill_screen(const char* lcd_msg) {
 
     void menu_action_sdfile(const char* filename, char* longFilename) {
       #if ENABLED(SD_REPRINT_LAST_SELECTED_FILE)
-        saved_encoderPosition = encoderPosition;  // Save which file was selected for later use
+        last_sdfile_encoderPosition = encoderPosition;  // Save which file was selected for later use
       #endif
       UNUSED(longFilename);
       card.openAndPrintFile(filename);
@@ -4659,7 +4661,7 @@ void lcd_update() {
 
       #endif
 
-      bool encoderPastThreshold = (abs(encoderDiff) >= ENCODER_PULSES_PER_STEP);
+      const bool encoderPastThreshold = (abs(encoderDiff) >= ENCODER_PULSES_PER_STEP);
       if (encoderPastThreshold || lcd_clicked) {
         if (encoderPastThreshold) {
           int32_t encoderMultiplier = 1;
@@ -4731,15 +4733,12 @@ void lcd_update() {
     uint16_t bbr2 = planner.block_buffer_runtime() >> 1;
 
     #if ENABLED(DOGLCD)
-      if ((lcdDrawUpdate || drawing_screen) && (!bbr2 || (bbr2 > max_display_update_time)
-      #if ENABLED(SDSUPPORT)
-        || (currentScreen == lcd_sdcard_menu)
-      #endif
-      ))
+      #define IS_DRAWING drawing_screen
     #else
-      if (lcdDrawUpdate && (!bbr2 || (bbr2 > max_display_update_time)))
+      #define IS_DRAWING false
     #endif
-    {
+
+    if ((lcdDrawUpdate || IS_DRAWING) && (!bbr2 || bbr2 > max_display_update_time)) {
       #if ENABLED(DOGLCD)
         if (!drawing_screen)
       #endif
@@ -4789,12 +4788,7 @@ void lcd_update() {
 
       // Return to Status Screen after a timeout
       if (currentScreen == lcd_status_screen || defer_return_to_status)
-        #if ENABLED(SD_REPRINT_LAST_SELECTED_FILE)
-          if (currentScreen != lcd_sdcard_menu)                // lcd_sdcard_menu() does not time out if ENABLED(SD_REPRINT_LAST_SELECTED_FILE)
-            return_to_status_ms = ms + LCD_TIMEOUT_TO_STATUS;  // When the printer finishes a file, it will wait with the file selected for 
-        #else                                                  // a re-print.
         return_to_status_ms = ms + LCD_TIMEOUT_TO_STATUS;
-        #endif
       else if (ELAPSED(ms, return_to_status_ms))
         lcd_return_to_status();
 
