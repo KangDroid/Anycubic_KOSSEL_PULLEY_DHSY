@@ -2682,26 +2682,9 @@ void kill_screen(const char* lcd_msg) {
 
   float move_menu_scale;
 
-  #if ENABLED(DELTA_CALIBRATION_MENU)
+  #if ENABLED(DELTA_CALIBRATION_MENU) || (ENABLED(DELTA_AUTO_CALIBRATION) && !HAS_BED_PROBE)
 
     void lcd_move_z();
-    void lcd_delta_calibrate_menu();
-
-    void _lcd_calibrate_homing() {
-      if (lcdDrawUpdate) lcd_implementation_drawmenu_static(LCD_HEIGHT >= 4 ? 1 : 0, PSTR(MSG_LEVEL_BED_HOMING));
-      lcdDrawUpdate = LCDVIEW_CALL_REDRAW_NEXT;
-      if (axis_homed[X_AXIS] && axis_homed[Y_AXIS] && axis_homed[Z_AXIS])
-        lcd_goto_previous_menu();
-    }
-
-    void _lcd_delta_calibrate_home() {
-      #if HAS_LEVELING
-        reset_bed_level(); // After calibration bed-level data is no longer valid
-      #endif
-
-      enqueue_and_echo_commands_P(PSTR("G28"));
-      lcd_goto_screen(_lcd_calibrate_homing);
-    }
 
     void _man_probe_pt(const float rx, const float ry) {
       #if HAS_LEVELING
@@ -2719,6 +2702,10 @@ void kill_screen(const char* lcd_msg) {
       lcd_goto_screen(lcd_move_z);
     }
 
+  #endif // DELTA_CALIBRATION_MENU || (DELTA_AUTO_CALIBRATION && !HAS_BED_PROBE)
+
+  #if ENABLED(DELTA_AUTO_CALIBRATION) && !HAS_BED_PROBE
+
     float lcd_probe_pt(const float &rx, const float &ry) {
       _man_probe_pt(rx, ry);
       KEEPALIVE_STATE(PAUSED_FOR_USER);
@@ -2730,24 +2717,40 @@ void kill_screen(const char* lcd_msg) {
       return current_position[Z_AXIS];
     }
 
+  #endif // DELTA_AUTO_CALIBRATION && !HAS_BED_PROBE
+
+  #if ENABLED(DELTA_CALIBRATION_MENU)
+
+    void _lcd_calibrate_homing() {
+      if (lcdDrawUpdate) lcd_implementation_drawmenu_static(LCD_HEIGHT >= 4 ? 1 : 0, PSTR(MSG_LEVEL_BED_HOMING));
+      lcdDrawUpdate = LCDVIEW_CALL_REDRAW_NEXT;
+      if (axis_homed[X_AXIS] && axis_homed[Y_AXIS] && axis_homed[Z_AXIS])
+        lcd_goto_previous_menu();
+    }
+
+    void _lcd_delta_calibrate_home() {
+      #if HAS_LEVELING
+        reset_bed_level(); // After calibration bed-level data is no longer valid
+      #endif
+
+      enqueue_and_echo_commands_P(PSTR("G28"));
+      lcd_goto_screen(_lcd_calibrate_homing);
+    }
+
     void _goto_tower_x() { _man_probe_pt(cos(RADIANS(210)) * delta_calibration_radius, sin(RADIANS(210)) * delta_calibration_radius); }
     void _goto_tower_y() { _man_probe_pt(cos(RADIANS(330)) * delta_calibration_radius, sin(RADIANS(330)) * delta_calibration_radius); }
     void _goto_tower_z() { _man_probe_pt(cos(RADIANS( 90)) * delta_calibration_radius, sin(RADIANS( 90)) * delta_calibration_radius); }
     void _goto_center()  { _man_probe_pt(0,0); }
 
-    static float _delta_height = DELTA_HEIGHT;
     void _lcd_set_delta_height() {
-      home_offset[Z_AXIS] = _delta_height - DELTA_HEIGHT;
       update_software_endstops(Z_AXIS);
     }
 
     void lcd_delta_settings() {
       START_MENU();
       MENU_BACK(MSG_DELTA_CALIBRATE);
-      float Tz = 0.00;
       MENU_ITEM_EDIT(float52, MSG_DELTA_DIAG_ROG, &delta_diagonal_rod, DELTA_DIAGONAL_ROD - 5.0, DELTA_DIAGONAL_ROD + 5.0);
-      _delta_height = DELTA_HEIGHT + home_offset[Z_AXIS];
-      MENU_MULTIPLIER_ITEM_EDIT_CALLBACK(float52, MSG_DELTA_HEIGHT, &_delta_height, _delta_height - 10.0, _delta_height + 10.0, _lcd_set_delta_height);
+      MENU_MULTIPLIER_ITEM_EDIT_CALLBACK(float52, MSG_DELTA_HEIGHT, &delta_height, delta_height - 10.0, delta_height + 10.0, _lcd_set_delta_height);
       MENU_ITEM_EDIT(float43, "Ex", &delta_endstop_adj[A_AXIS], -5.0, 5.0);
       MENU_ITEM_EDIT(float43, "Ey", &delta_endstop_adj[B_AXIS], -5.0, 5.0);
       MENU_ITEM_EDIT(float43, "Ez", &delta_endstop_adj[C_AXIS], -5.0, 5.0);
@@ -4739,22 +4742,18 @@ void lcd_update() {
     #endif
 
     if ((lcdDrawUpdate || IS_DRAWING) && (!bbr2 || bbr2 > max_display_update_time)) {
-      #if ENABLED(DOGLCD)
-        if (!drawing_screen)
-      #endif
-        {
-          switch (lcdDrawUpdate) {
-            case LCDVIEW_CALL_NO_REDRAW:
-              lcdDrawUpdate = LCDVIEW_NONE;
-              break;
-            case LCDVIEW_CLEAR_CALL_REDRAW: // set by handlers, then altered after (rarely occurs here)
-            case LCDVIEW_CALL_REDRAW_NEXT:  // set by handlers, then altered after (never occurs here?)
-              lcdDrawUpdate = LCDVIEW_REDRAW_NOW;
-            case LCDVIEW_REDRAW_NOW:        // set above, or by a handler through LCDVIEW_CALL_REDRAW_NEXT
-            case LCDVIEW_NONE:
-              break;
-          } // switch
-        }
+
+      if (!IS_DRAWING) switch (lcdDrawUpdate) {
+        case LCDVIEW_CALL_NO_REDRAW:
+          lcdDrawUpdate = LCDVIEW_NONE;
+          break;
+        case LCDVIEW_CLEAR_CALL_REDRAW: // set by handlers, then altered after (rarely occurs here)
+        case LCDVIEW_CALL_REDRAW_NEXT:  // set by handlers, then altered after (never occurs here?)
+          lcdDrawUpdate = LCDVIEW_REDRAW_NOW;
+        case LCDVIEW_REDRAW_NOW:        // set above, or by a handler through LCDVIEW_CALL_REDRAW_NEXT
+        case LCDVIEW_NONE:
+          break;
+      } // switch
 
       #if ENABLED(ADC_KEYPAD)
         buttons_reprapworld_keypad = 0;
@@ -4766,14 +4765,18 @@ void lcd_update() {
         #define CURRENTSCREEN() lcd_status_screen()
       #endif
 
-      #if ENABLED(DOGLCD)  // Changes due to different driver architecture of the DOGM display
-        if (!drawing_screen) {
-          u8g.firstPage();
-          drawing_screen = 1;
+      #if ENABLED(DOGLCD)
+        if (!drawing_screen) {                        // If not already drawing pages
+          u8g.firstPage();                            // Start the first page
+          drawing_screen = 1;                         // Flag as drawing pages
         }
-        lcd_setFont(FONT_MENU);
-        u8g.setColorIndex(1);
-        CURRENTSCREEN();
+        lcd_setFont(FONT_MENU);                       // Setup font for every page draw
+        u8g.setColorIndex(1);                         // And reset the color
+        CURRENTSCREEN();                              // Draw and process the current screen
+
+        // The screen handler can clear drawing_screen for an action that changes the screen.
+        // If still drawing and there's another page, update max-time and return now.
+        // The nextPage will already be set up on the next call.
         if (drawing_screen && (drawing_screen = u8g.nextPage())) {
           NOLESS(max_display_update_time, millis() - ms);
           return;
@@ -4781,6 +4784,9 @@ void lcd_update() {
       #else
         CURRENTSCREEN();
       #endif
+
+      // Keeping track of the longest time for an individual LCD update.
+      // Used to do screen throttling when the planner starts to fill up.
       NOLESS(max_display_update_time, millis() - ms);
     }
 
@@ -4794,23 +4800,19 @@ void lcd_update() {
 
     #endif // ULTIPANEL
 
-    #if ENABLED(DOGLCD)
-      if (!drawing_screen)
-    #endif
-      {
-        switch (lcdDrawUpdate) {
-          case LCDVIEW_CLEAR_CALL_REDRAW:
-            lcd_implementation_clear();
-          case LCDVIEW_CALL_REDRAW_NEXT:
-            lcdDrawUpdate = LCDVIEW_REDRAW_NOW;
-            break;
-          case LCDVIEW_REDRAW_NOW:
-            lcdDrawUpdate = LCDVIEW_NONE;
-            break;
-          case LCDVIEW_NONE:
-            break;
-        } // switch
-      }
+    if (!IS_DRAWING) switch (lcdDrawUpdate) {
+      case LCDVIEW_CLEAR_CALL_REDRAW:
+        lcd_implementation_clear();
+      case LCDVIEW_CALL_REDRAW_NEXT:
+        lcdDrawUpdate = LCDVIEW_REDRAW_NOW;
+        break;
+      case LCDVIEW_REDRAW_NOW:
+        lcdDrawUpdate = LCDVIEW_NONE;
+        break;
+      case LCDVIEW_NONE:
+        break;
+    } // switch
+
   } // ELAPSED(ms, next_lcd_update_ms)
 }
 
