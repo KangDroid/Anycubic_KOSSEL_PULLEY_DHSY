@@ -50,7 +50,6 @@
 
 #if ENABLED(AUTO_BED_LEVELING_UBL)
   #include "ubl.h"
-  bool ubl_lcd_map_control = false;
 #elif HAS_ABL
   #include "planner.h"
 #elif ENABLED(MESH_BED_LEVELING) && ENABLED(LCD_BED_LEVELING)
@@ -514,20 +513,22 @@ uint16_t max_display_update_time = 0;
       if (screen == lcd_status_screen) {
         defer_return_to_status = false;
         #if ENABLED(AUTO_BED_LEVELING_UBL)
-          ubl_lcd_map_control = false;
+          ubl.lcd_map_control = false;
         #endif
         screen_history_depth = 0;
       }
       lcd_implementation_clear();
       // Re-initialize custom characters that may be re-used
       #if DISABLED(DOGLCD) && ENABLED(AUTO_BED_LEVELING_UBL)
-        if (!ubl_lcd_map_control) lcd_set_custom_characters(
-          #if ENABLED(LCD_PROGRESS_BAR)
-            screen == lcd_status_screen
-          #endif
-        );
+        if (!ubl.lcd_map_control) {
+          lcd_set_custom_characters(
+            #if ENABLED(LCD_PROGRESS_BAR)
+              screen == lcd_status_screen ? CHARSET_INFO : CHARSET_MENU
+            #endif
+          );
+        }
       #elif ENABLED(LCD_PROGRESS_BAR)
-        lcd_set_custom_characters(screen == lcd_status_screen);
+        lcd_set_custom_characters(screen == lcd_status_screen ? CHARSET_INFO : CHARSET_MENU);
       #endif
       lcdDrawUpdate = LCDVIEW_CALL_REDRAW_NEXT;
       screen_changed = true;
@@ -669,7 +670,7 @@ void lcd_status_screen() {
       #endif
       lcd_implementation_init( // to maybe revive the LCD if static electricity killed it.
         #if ENABLED(LCD_PROGRESS_BAR)
-          false
+          CHARSET_MENU
         #endif
       );
       lcd_goto_screen(lcd_main_menu);
@@ -850,7 +851,7 @@ void kill_screen(const char* lcd_msg) {
       static int8_t bar_percent = 0;
       if (lcd_clicked) {
         lcd_goto_previous_menu();
-        lcd_set_custom_characters(false);
+        lcd_set_custom_characters(CHARSET_MENU);
         return;
       }
       bar_percent += (int8_t)encoderPosition;
@@ -1112,7 +1113,6 @@ void kill_screen(const char* lcd_msg) {
               thermalManager.babystep_axis(Z_AXIS, babystep_increment);
 
             zprobe_zoffset = new_zoffset;
-            refresh_zprobe_zoffset(true);
             lcdDrawUpdate = LCDVIEW_CALL_REDRAW_NEXT;
           }
         }
@@ -1678,11 +1678,6 @@ void kill_screen(const char* lcd_msg) {
     static void lcd_load_settings()    { lcd_completion_feedback(settings.load()); }
   #endif
 
-  #if HAS_BED_PROBE && DISABLED(BABYSTEP_ZPROBE_OFFSET)
-    static void lcd_refresh_zprobe_zoffset() { refresh_zprobe_zoffset(); }
-  #endif
-
-
   #if ENABLED(LEVEL_BED_CORNERS)
 
     /**
@@ -2003,7 +1998,7 @@ void kill_screen(const char* lcd_msg) {
       #if ENABLED(BABYSTEP_ZPROBE_OFFSET) //Using
         MENU_ITEM(submenu, MSG_ZPROBE_ZOFFSET, lcd_babystep_zoffset);
       #elif HAS_BED_PROBE
-        MENU_ITEM_EDIT_CALLBACK(float32, MSG_ZPROBE_ZOFFSET, &zprobe_zoffset, Z_PROBE_OFFSET_RANGE_MIN, Z_PROBE_OFFSET_RANGE_MAX, lcd_refresh_zprobe_zoffset);
+        MENU_ITEM_EDIT(float32, MSG_ZPROBE_ZOFFSET, &zprobe_zoffset, Z_PROBE_OFFSET_RANGE_MIN, Z_PROBE_OFFSET_RANGE_MAX);
       #endif
 
       MENU_ITEM(submenu, MSG_LEVEL_BED, _lcd_level_bed_continue);
@@ -2363,7 +2358,7 @@ void kill_screen(const char* lcd_msg) {
 
     void _lcd_ubl_map_homing() {
       defer_return_to_status = true;
-      ubl_lcd_map_control = true; // Return to the map screen
+      ubl.lcd_map_control = true; // Return to the map screen
       if (lcdDrawUpdate) lcd_implementation_drawmenu_static(LCD_HEIGHT < 3 ? 0 : (LCD_HEIGHT > 4 ? 2 : 1), PSTR(MSG_LEVEL_BED_HOMING));
       lcdDrawUpdate = LCDVIEW_CALL_NO_REDRAW;
       if (axis_homed[X_AXIS] && axis_homed[Y_AXIS] && axis_homed[Z_AXIS])
@@ -3660,7 +3655,7 @@ void kill_screen(const char* lcd_msg) {
     #if ENABLED(BABYSTEP_ZPROBE_OFFSET)
       MENU_ITEM(submenu, MSG_ZPROBE_ZOFFSET, lcd_babystep_zoffset);
     #elif HAS_BED_PROBE
-      MENU_ITEM_EDIT_CALLBACK(float32, MSG_ZPROBE_ZOFFSET, &zprobe_zoffset, Z_PROBE_OFFSET_RANGE_MIN, Z_PROBE_OFFSET_RANGE_MAX, lcd_refresh_zprobe_zoffset);
+      MENU_ITEM_EDIT(float32, MSG_ZPROBE_ZOFFSET, &zprobe_zoffset, Z_PROBE_OFFSET_RANGE_MIN, Z_PROBE_OFFSET_RANGE_MAX);
     #endif
 
     // M203 / M205 - Feedrate items
@@ -3702,6 +3697,7 @@ void kill_screen(const char* lcd_msg) {
       #if EXTRUDERS == 1
         MENU_MULTIPLIER_ITEM_EDIT_CALLBACK(float43, MSG_FILAMENT_DIAM, &planner.filament_size[0], 1.5, 3.25, planner.calculate_volumetric_multipliers);
       #else // EXTRUDERS > 1
+        MENU_MULTIPLIER_ITEM_EDIT_CALLBACK(float43, MSG_FILAMENT_DIAM, &planner.filament_size[active_extruder], 1.5, 3.25, planner.calculate_volumetric_multipliers);
         MENU_MULTIPLIER_ITEM_EDIT_CALLBACK(float43, MSG_FILAMENT_DIAM MSG_DIAM_E1, &planner.filament_size[0], 1.5, 3.25, planner.calculate_volumetric_multipliers);
         MENU_MULTIPLIER_ITEM_EDIT_CALLBACK(float43, MSG_FILAMENT_DIAM MSG_DIAM_E2, &planner.filament_size[1], 1.5, 3.25, planner.calculate_volumetric_multipliers);
         #if EXTRUDERS > 2
@@ -3800,7 +3796,8 @@ void kill_screen(const char* lcd_msg) {
     void lcd_sdcard_menu() {
       ENCODER_DIRECTION_MENUS();
 
-      const uint16_t fileCnt = card.getnrfilenames();
+      const uint16_t fileCnt = card.get_num_Files();
+
       START_MENU();
       MENU_BACK(MSG_MAIN);
       card.getWorkDirName();
@@ -4474,11 +4471,7 @@ void kill_screen(const char* lcd_msg) {
 
 void lcd_init() {
 
-  lcd_implementation_init(
-    #if ENABLED(LCD_PROGRESS_BAR)
-      true
-    #endif
-  );
+  lcd_implementation_init();
 
   #if ENABLED(NEWPANEL)
     #if BUTTON_EXISTS(EN1)
@@ -4647,7 +4640,7 @@ void lcd_update() {
       lcdDrawUpdate = LCDVIEW_CLEAR_CALL_REDRAW;
       lcd_implementation_init( // to maybe revive the LCD if static electricity killed it.
         #if ENABLED(LCD_PROGRESS_BAR)
-          currentScreen == lcd_status_screen
+          currentScreen == lcd_status_screen ? CHARSET_INFO : CHARSET_MENU
         #endif
       );
     }
