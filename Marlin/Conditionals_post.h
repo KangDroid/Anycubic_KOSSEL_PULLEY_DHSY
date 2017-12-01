@@ -804,8 +804,7 @@
     #endif
   #endif
 
-  #define PROBE_PIN_CONFIGURED (HAS_Z_MIN_PROBE_PIN || (HAS_Z_MIN && ENABLED(Z_MIN_PROBE_USES_Z_MIN_ENDSTOP_PIN)))
-  #define HAS_BED_PROBE (PROBE_SELECTED && PROBE_PIN_CONFIGURED && DISABLED(PROBE_MANUALLY))
+  #define HAS_BED_PROBE (PROBE_SELECTED && DISABLED(PROBE_MANUALLY))
 
   #if ENABLED(Z_PROBE_ALLEN_KEY)
     #define PROBE_IS_TRIGGERED_WHEN_STOWED_TEST
@@ -891,7 +890,7 @@
   /**
    * Set granular options based on the specific type of leveling
    */
-  #define UBL_DELTA  (ENABLED(AUTO_BED_LEVELING_UBL) && (ENABLED(DELTA) || ENABLED(UBL_GRANULAR_SEGMENTATION_FOR_CARTESIAN)))
+  #define UBL_DELTA  (ENABLED(AUTO_BED_LEVELING_UBL) && (ENABLED(DELTA) || ENABLED(SEGMENT_LEVELED_MOVES)))
   #define ABL_PLANAR (ENABLED(AUTO_BED_LEVELING_LINEAR) || ENABLED(AUTO_BED_LEVELING_3POINT))
   #define ABL_GRID   (ENABLED(AUTO_BED_LEVELING_LINEAR) || ENABLED(AUTO_BED_LEVELING_BILINEAR))
   #define OLDSCHOOL_ABL         (ABL_PLANAR || ABL_GRID)
@@ -904,6 +903,10 @@
   #if HAS_PROBING_PROCEDURE
     #define PROBE_BED_WIDTH abs(RIGHT_PROBE_BED_POSITION - (LEFT_PROBE_BED_POSITION))
     #define PROBE_BED_HEIGHT abs(BACK_PROBE_BED_POSITION - (FRONT_PROBE_BED_POSITION))
+  #endif
+
+  #if ENABLED(SEGMENT_LEVELED_MOVES) && !defined(LEVELED_SEGMENT_LENGTH)
+    #define LEVELED_SEGMENT_LENGTH 5
   #endif
 
   /**
@@ -930,6 +933,20 @@
     #define MIN_PROBE_Y (max(Y_MIN_BED, Y_MIN_POS + Y_PROBE_OFFSET_FROM_EXTRUDER))
     #define MAX_PROBE_X (min(X_MAX_BED, X_MAX_POS + X_PROBE_OFFSET_FROM_EXTRUDER))
     #define MAX_PROBE_Y (min(Y_MAX_BED, Y_MAX_POS + Y_PROBE_OFFSET_FROM_EXTRUDER))
+  #endif
+
+  // Allow configuration to override these for special purposes
+  #ifndef MIN_PROBE_X
+    #define MIN_PROBE_X _MIN_PROBE_X
+  #endif
+  #ifndef MIN_PROBE_Y
+    #define MIN_PROBE_Y _MIN_PROBE_Y
+  #endif
+  #ifndef MAX_PROBE_X
+    #define MAX_PROBE_X _MAX_PROBE_X
+  #endif
+  #ifndef MAX_PROBE_Y
+    #define MAX_PROBE_Y _MAX_PROBE_Y
   #endif
 
   /**
@@ -1077,6 +1094,29 @@
     #define MAX_VFAT_ENTRIES (5)
   #else
     #define MAX_VFAT_ENTRIES (2)
+  #endif
+
+  // Set defaults for unspecified LED user colors
+  #if ENABLED(LED_CONTROL_MENU)
+    #ifndef LED_USER_PRESET_RED
+      #define LED_USER_PRESET_RED       255
+    #endif
+    #ifndef LED_USER_PRESET_GREEN
+      #define LED_USER_PRESET_GREEN     255
+    #endif
+    #ifndef LED_USER_PRESET_BLUE
+      #define LED_USER_PRESET_BLUE      255
+    #endif
+    #ifndef LED_USER_PRESET_WHITE
+      #define LED_USER_PRESET_WHITE     0
+    #endif
+    #ifndef LED_USER_PRESET_BRIGHTNESS
+      #ifdef NEOPIXEL_BRIGHTNESS
+        #define LED_USER_PRESET_BRIGHTNESS NEOPIXEL_BRIGHTNESS
+      #else
+        #define LED_USER_PRESET_BRIGHTNESS 255
+      #endif
+    #endif
   #endif
 
 #endif // CONDITIONALS_POST_H
