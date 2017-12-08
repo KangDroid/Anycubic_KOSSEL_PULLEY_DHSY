@@ -519,7 +519,7 @@ static millis_t stepper_inactive_time = (DEFAULT_STEPPER_DEACTIVE_TIME) * 1000UL
   #define BUZZ(d,f) NOOP
 #endif
 
-static uint8_t target_extruder;
+uint8_t target_extruder;
 
 #if HAS_BED_PROBE
   float zprobe_zoffset; // Initialized by settings.load()
@@ -2215,7 +2215,7 @@ static void clean_up_after_endstop_or_probe_move() {
   }
 
   /**
-   * @details Used by probe_pt to do a single Z probe.
+   * @details Used by probe_pt to do a single Z probe at the current position.
    *          Leaves current_position[Z_AXIS] at the height where the probe triggered.
    *
    * @return The raw Z position where the probe was triggered
@@ -2229,13 +2229,15 @@ static void clean_up_after_endstop_or_probe_move() {
     // Prevent stepper_inactive_time from running out and EXTRUDER_RUNOUT_PREVENT from extruding
     refresh_cmd_timeout();
 
-    #if ENABLED(PROBE_DOUBLE_TOUCH)
+    // Double-probing does a fast probe followed by a slow probe
+    #if MULTIPLE_PROBING == 2
 
       // Do a first probe at the fast speed
       if (do_probe_move(-10, Z_PROBE_SPEED_FAST)) return NAN;
 
+      float first_probe_z = current_position[Z_AXIS];
+
       #if ENABLED(DEBUG_LEVELING_FEATURE)
-        float first_probe_z = current_position[Z_AXIS];
         if (DEBUGGING(LEVELING)) SERIAL_ECHOLNPAIR("1st Probe Z:", first_probe_z);
       #endif
 
@@ -2257,22 +2259,49 @@ static void clean_up_after_endstop_or_probe_move() {
       }
     #endif
 
-    // move down slowly to find bed
-    if (do_probe_move(-10, Z_PROBE_SPEED_SLOW)) return NAN;
+    #if MULTIPLE_PROBING > 2
+      float probes_total = 0;
+      for (uint8_t p = MULTIPLE_PROBING + 1; --p;) {
+    #endif
+
+        // move down slowly to find bed
+        if (do_probe_move(-10, Z_PROBE_SPEED_SLOW)) return NAN;
+
+    #if MULTIPLE_PROBING > 2
+        probes_total += current_position[Z_AXIS];
+        if (p > 1) do_blocking_move_to_z(current_position[Z_AXIS] + Z_CLEARANCE_BETWEEN_PROBES, MMM_TO_MMS(Z_PROBE_SPEED_FAST));
+      }
+    #endif
+
+    #if MULTIPLE_PROBING > 2
+
+      // Return the average value of all probes
+      return probes_total * (1.0 / (MULTIPLE_PROBING));
+
+    #elif MULTIPLE_PROBING == 2
+
+      const float z2 = current_position[Z_AXIS];
+
+      #if ENABLED(DEBUG_LEVELING_FEATURE)
+        if (DEBUGGING(LEVELING)) {
+          SERIAL_ECHOPAIR("2nd Probe Z:", z2);
+          SERIAL_ECHOLNPAIR(" Discrepancy:", first_probe_z - z2);
+        }
+      #endif
+
+      // Return a weighted average of the fast and slow probes
+      return (z2 * 3.0 + first_probe_z * 2.0) * 0.2;
+
+    #else
+
+      // Return the single probe result
+      return current_position[Z_AXIS];
+
+    #endif
 
     #if ENABLED(DEBUG_LEVELING_FEATURE)
       if (DEBUGGING(LEVELING)) DEBUG_POS("<<< run_z_probe", current_position);
     #endif
-
-    // Debug: compare probe heights
-    #if ENABLED(PROBE_DOUBLE_TOUCH) && ENABLED(DEBUG_LEVELING_FEATURE)
-      if (DEBUGGING(LEVELING)) {
-        SERIAL_ECHOPAIR("2nd Probe Z:", current_position[Z_AXIS]);
-        SERIAL_ECHOLNPAIR(" Discrepancy:", first_probe_z - current_position[Z_AXIS]);
-      }
-    #endif
-
-    return current_position[Z_AXIS];
   }
 
   /**
@@ -4004,23 +4033,21 @@ inline void gcode_G28(const bool always_home_all) {
         #endif
       }
 
-    #else
-
-      if (home_all || homeX || homeY) {
-        // Raise Z before homing any other axes and z is not already high enough (never lower z)
-        destination[Z_AXIS] = Z_HOMING_HEIGHT;
-        if (destination[Z_AXIS] > current_position[Z_AXIS]) {
-
-          #if ENABLED(DEBUG_LEVELING_FEATURE)
-            if (DEBUGGING(LEVELING))
-              SERIAL_ECHOLNPAIR("Raise Z (before homing) to ", destination[Z_AXIS]);
-          #endif
-
-          do_blocking_move_to_z(destination[Z_AXIS]);
-        }
-      }
-
     #endif
+
+    if (home_all || homeX || homeY) {
+      // Raise Z before homing any other axes and z is not already high enough (never lower z)
+      destination[Z_AXIS] = Z_HOMING_HEIGHT;
+      if (destination[Z_AXIS] > current_position[Z_AXIS]) {
+
+        #if ENABLED(DEBUG_LEVELING_FEATURE)
+          if (DEBUGGING(LEVELING))
+            SERIAL_ECHOLNPAIR("Raise Z (before homing) to ", destination[Z_AXIS]);
+        #endif
+
+        do_blocking_move_to_z(destination[Z_AXIS]);
+      }
+    }
 
     #if ENABLED(QUICK_HOME)
 
@@ -6007,7 +6034,7 @@ void home_all_axes() { gcode_G28(true); }
 
     bool G38_pass_fail = false;
 
-    #if ENABLED(PROBE_DOUBLE_TOUCH)
+    #if MULTIPLE_PROBING > 1
       // Get direction of move and retract
       float retract_mm[XYZ];
       LOOP_XYZ(i) {
@@ -6034,7 +6061,7 @@ void home_all_axes() { gcode_G28(true); }
 
       G38_pass_fail = true;
 
-      #if ENABLED(PROBE_DOUBLE_TOUCH)
+      #if MULTIPLE_PROBING > 1
         // Move away by the retract distance
         set_destination_from_current();
         LOOP_XYZ(i) destination[i] += retract_mm[i];
@@ -7231,10 +7258,7 @@ inline void gcode_M42() {
    *     L = Number of legs of movement before probe
    *     S = Schizoid (Or Star if you prefer)
    *
-   * This function assumes the bed has been homed.  Specifically, that a G28 command
-   * as been issued prior to invoking the M48 Z probe repeatability measurement function.
-   * Any information generated by a prior G29 Bed leveling command will be lost and need to be
-   * regenerated.
+   * This function requires the machine to be homed before invocation.
    */
   inline void gcode_M48() {
 
@@ -7570,80 +7594,6 @@ inline void gcode_M104() {
   #endif
 }
 
-#if HAS_TEMP_HOTEND || HAS_TEMP_BED
-
-  void print_heater_state(const float &c, const float &t,
-    #if ENABLED(SHOW_TEMP_ADC_VALUES)
-      const float r,
-    #endif
-    const int8_t e=-2
-  ) {
-    #if !(HAS_TEMP_BED && HAS_TEMP_HOTEND) && HOTENDS <= 1
-      UNUSED(e);
-    #endif
-
-    SERIAL_PROTOCOLCHAR(' ');
-    SERIAL_PROTOCOLCHAR(
-      #if HAS_TEMP_BED && HAS_TEMP_HOTEND
-        e == -1 ? 'B' : 'T'
-      #elif HAS_TEMP_HOTEND
-        'T'
-      #else
-        'B'
-      #endif
-    );
-    #if HOTENDS > 1
-      if (e >= 0) SERIAL_PROTOCOLCHAR('0' + e);
-    #endif
-    SERIAL_PROTOCOLCHAR(':');
-    SERIAL_PROTOCOL(c);
-    SERIAL_PROTOCOLPAIR(" /" , t);
-    #if ENABLED(SHOW_TEMP_ADC_VALUES)
-      SERIAL_PROTOCOLPAIR(" (", r / OVERSAMPLENR);
-      SERIAL_PROTOCOLCHAR(')');
-    #endif
-  }
-
-  void print_heaterstates() {
-    #if HAS_TEMP_HOTEND
-      print_heater_state(thermalManager.degHotend(target_extruder), thermalManager.degTargetHotend(target_extruder)
-        #if ENABLED(SHOW_TEMP_ADC_VALUES)
-          , thermalManager.rawHotendTemp(target_extruder)
-        #endif
-      );
-    #endif
-    #if HAS_TEMP_BED
-      print_heater_state(thermalManager.degBed(), thermalManager.degTargetBed(),
-        #if ENABLED(SHOW_TEMP_ADC_VALUES)
-          thermalManager.rawBedTemp(),
-        #endif
-        -1 // BED
-      );
-    #endif
-    #if HOTENDS > 1
-      HOTEND_LOOP() print_heater_state(thermalManager.degHotend(e), thermalManager.degTargetHotend(e),
-        #if ENABLED(SHOW_TEMP_ADC_VALUES)
-          thermalManager.rawHotendTemp(e),
-        #endif
-        e
-      );
-    #endif
-    SERIAL_PROTOCOLPGM(" @:");
-    SERIAL_PROTOCOL(thermalManager.getHeaterPower(target_extruder));
-    #if HAS_TEMP_BED
-      SERIAL_PROTOCOLPGM(" B@:");
-      SERIAL_PROTOCOL(thermalManager.getHeaterPower(-1));
-    #endif
-    #if HOTENDS > 1
-      HOTEND_LOOP() {
-        SERIAL_PROTOCOLPAIR(" @", e);
-        SERIAL_PROTOCOLCHAR(':');
-        SERIAL_PROTOCOL(thermalManager.getHeaterPower(e));
-      }
-    #endif
-  }
-#endif
-
 /**
  * M105: Read hot end and bed temperature
  */
@@ -7652,7 +7602,7 @@ inline void gcode_M105() {
 
   #if HAS_TEMP_HOTEND || HAS_TEMP_BED
     SERIAL_PROTOCOLPGM(MSG_OK);
-    print_heaterstates();
+    thermalManager.print_heaterstates();
   #else // !HAS_TEMP_HOTEND && !HAS_TEMP_BED
     SERIAL_ERROR_START();
     SERIAL_ERRORLNPGM(MSG_ERR_NO_THERMISTORS);
@@ -7663,26 +7613,12 @@ inline void gcode_M105() {
 
 #if ENABLED(AUTO_REPORT_TEMPERATURES) && (HAS_TEMP_HOTEND || HAS_TEMP_BED)
 
-  static uint8_t auto_report_temp_interval;
-  static millis_t next_temp_report_ms;
-
   /**
    * M155: Set temperature auto-report interval. M155 S<seconds>
    */
   inline void gcode_M155() {
-    if (parser.seenval('S')) {
-      auto_report_temp_interval = parser.value_byte();
-      NOMORE(auto_report_temp_interval, 60);
-      next_temp_report_ms = millis() + 1000UL * auto_report_temp_interval;
-    }
-  }
-
-  inline void auto_report_temperatures() {
-    if (auto_report_temp_interval && ELAPSED(millis(), next_temp_report_ms)) {
-      next_temp_report_ms = millis() + 1000UL * auto_report_temp_interval;
-      print_heaterstates();
-      SERIAL_EOL();
-    }
+    if (parser.seenval('S'))
+      thermalManager.set_auto_report_interval(parser.value_byte());
   }
 
 #endif // AUTO_REPORT_TEMPERATURES
@@ -7851,7 +7787,7 @@ inline void gcode_M109() {
     now = millis();
     if (ELAPSED(now, next_temp_ms)) { //Print temp & remaining time every 1s while waiting
       next_temp_ms = now + 1000UL;
-      print_heaterstates();
+      thermalManager.print_heaterstates();
       #if TEMP_RESIDENCY_TIME > 0
         SERIAL_PROTOCOLPGM(" W:");
         if (residency_start_ms)
@@ -7988,7 +7924,7 @@ inline void gcode_M109() {
       now = millis();
       if (ELAPSED(now, next_temp_ms)) { //Print Temp Reading every 1 second while heating up.
         next_temp_ms = now + 1000UL;
-        print_heaterstates();
+        thermalManager.print_heaterstates();
         #if TEMP_BED_RESIDENCY_TIME > 0
           SERIAL_PROTOCOLPGM(" W:");
           if (residency_start_ms)
@@ -9917,7 +9853,7 @@ inline void gcode_M502() {
    * M503: print settings currently in memory
    */
   inline void gcode_M503() {
-    (void)settings.report(parser.boolval('S'));
+    (void)settings.report(parser.seen('S') && !parser.value_bool());
   }
 #endif
 
@@ -12754,7 +12690,7 @@ void set_current_from_steppers_for_axis(const AxisEnum axis) {
     #if IS_SCARA && ENABLED(SCARA_FEEDRATE_SCALING)
       // SCARA needs to scale the feed rate from mm/s to degrees/s
       const float inv_segment_length = min(10.0, float(segments) / cartesian_mm), // 1/mm/segs
-                  feed_factor = inv_segment_length * _feedrate_mm_s;
+                  inverse_secs = inv_segment_length * _feedrate_mm_s;
       float oldA = stepper.get_axis_position_degrees(A_AXIS),
             oldB = stepper.get_axis_position_degrees(B_AXIS);
     #endif
@@ -12788,7 +12724,7 @@ void set_current_from_steppers_for_axis(const AxisEnum axis) {
         // Use ratio between the length of the move and the larger angle change
         const float adiff = abs(delta[A_AXIS] - oldA),
                     bdiff = abs(delta[B_AXIS] - oldB);
-        planner.buffer_line(delta[A_AXIS], delta[B_AXIS], delta[C_AXIS], raw[E_AXIS], max(adiff, bdiff) * feed_factor, active_extruder);
+        planner.buffer_line(delta[A_AXIS], delta[B_AXIS], delta[C_AXIS], raw[E_AXIS], max(adiff, bdiff) * inverse_secs, active_extruder);
         oldA = delta[A_AXIS];
         oldB = delta[B_AXIS];
       #else
@@ -12806,7 +12742,7 @@ void set_current_from_steppers_for_axis(const AxisEnum axis) {
       ADJUST_DELTA(rtarget);
       const float adiff = abs(delta[A_AXIS] - oldA),
                   bdiff = abs(delta[B_AXIS] - oldB);
-      planner.buffer_line(delta[A_AXIS], delta[B_AXIS], delta[C_AXIS], raw[E_AXIS], max(adiff, bdiff) * feed_factor, active_extruder);
+      planner.buffer_line(delta[A_AXIS], delta[B_AXIS], delta[C_AXIS], raw[E_AXIS], max(adiff, bdiff) * inverse_secs, active_extruder);
     #else
       planner.buffer_line_kinematic(rtarget, _feedrate_mm_s, active_extruder);
     #endif
@@ -13684,7 +13620,7 @@ void idle(
   host_keepalive();
 
   #if ENABLED(AUTO_REPORT_TEMPERATURES) && (HAS_TEMP_HOTEND || HAS_TEMP_BED)
-    auto_report_temperatures();
+    thermalManager.auto_report_temperatures();
   #endif
 
   manage_inactivity(

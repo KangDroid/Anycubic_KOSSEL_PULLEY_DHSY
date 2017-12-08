@@ -122,19 +122,20 @@ float Planner::min_feedrate_mm_s,
           Planner::inverse_z_fade_height,
           Planner::last_fade_z;
   #endif
+#else
+  constexpr bool Planner::leveling_active;
 #endif
 
 #if ENABLED(SKEW_CORRECTION)
   #if ENABLED(SKEW_CORRECTION_GCODE)
-    // Initialized by settings.load()
     float Planner::xy_skew_factor;
-    #if ENABLED(SKEW_CORRECTION_FOR_Z)
-      float Planner::xz_skew_factor, Planner::yz_skew_factor;
-    #else
-      constexpr float Planner::xz_skew_factor, Planner::yz_skew_factor;
-    #endif
   #else
-    constexpr float Planner::xy_skew_factor, Planner::xz_skew_factor, Planner::yz_skew_factor;
+    constexpr float Planner::xy_skew_factor;
+  #endif
+  #if ENABLED(SKEW_CORRECTION_FOR_Z) && ENABLED(SKEW_CORRECTION_GCODE)
+    float Planner::xz_skew_factor, Planner::yz_skew_factor;
+  #else
+    constexpr float Planner::xz_skew_factor, Planner::yz_skew_factor;
   #endif
 #endif
 
@@ -581,8 +582,6 @@ void Planner::calculate_volumetric_multipliers() {
           rx = temprx;
           ry = tempry;
         }
-        else
-          SERIAL_ECHOLN(MSG_SKEW_WARN);
       }
     #endif
 
@@ -779,7 +778,7 @@ void Planner::_buffer_steps(const int32_t (&target)[XYZE], float fr_mm_s, const 
   block_t* block = &block_buffer[block_buffer_head];
 
   // Clear all flags, including the "busy" bit
-  block->flag = 0;
+  block->flag = 0x00;
 
   // Set direction bits
   block->direction_bits = dm;
@@ -1043,9 +1042,6 @@ void Planner::_buffer_steps(const int32_t (&target)[XYZE], float fr_mm_s, const 
     CRITICAL_SECTION_END
   #endif
 
-  block->nominal_speed = block->millimeters * inverse_secs;           //   (mm/sec) Always > 0
-  block->nominal_rate = CEIL(block->step_event_count * inverse_secs); // (step/sec) Always > 0
-
   #if ENABLED(FILAMENT_WIDTH_SENSOR)
     static float filwidth_e_count = 0, filwidth_delay_dist = 0;
 
@@ -1080,10 +1076,13 @@ void Planner::_buffer_steps(const int32_t (&target)[XYZE], float fr_mm_s, const 
     }
   #endif
 
-  // Calculate and limit speed in mm/sec for each axis
+  // Calculate and limit speed in mm/sec for each axis, calculate minimum acceleration ratio
   float current_speed[NUM_AXIS], speed_factor = 1.0; // factor <1 decreases speed
+  float max_stepper_speed = 0, min_axis_accel_ratio = 1; // ratio < 1 means acceleration ramp needed
   LOOP_XYZE(i) {
     const float cs = FABS((current_speed[i] = delta_mm[i] * inverse_secs));
+    NOMORE(min_axis_accel_ratio, max_jerk[i] / cs);
+    NOLESS(max_stepper_speed, cs);
     #if ENABLED(DISTINCT_E_FACTORS)
       if (i == E_AXIS) i += extruder;
     #endif
@@ -1128,12 +1127,18 @@ void Planner::_buffer_steps(const int32_t (&target)[XYZE], float fr_mm_s, const 
     }
   #endif // XY_FREQUENCY_LIMIT
 
+  block->nominal_speed = max_stepper_speed; // (mm/sec) Always > 0
+  block->nominal_rate = CEIL(block->step_event_count * inverse_secs); // (step/sec) Always > 0
+
   // Correct the speed
   if (speed_factor < 1.0) {
     LOOP_XYZE(i) current_speed[i] *= speed_factor;
     block->nominal_speed *= speed_factor;
     block->nominal_rate *= speed_factor;
   }
+
+  float safe_speed = block->nominal_speed * min_axis_accel_ratio;
+  static float previous_safe_speed;
 
   // Compute and limit the acceleration rate for the trapezoid generator.
   const float steps_per_mm = block->step_event_count * inverse_millimeters;
@@ -1236,32 +1241,6 @@ void Planner::_buffer_steps(const int32_t (&target)[XYZE], float fr_mm_s, const 
     }
   #endif
 
-  /**
-   * Adapted from Průša MKS firmware
-   * https://github.com/prusa3d/Prusa-Firmware
-   *
-   * Start with a safe speed (from which the machine may halt to stop immediately).
-   */
-
-  // Exit speed limited by a jerk to full halt of a previous last segment
-  static float previous_safe_speed;
-
-  float safe_speed = block->nominal_speed;
-  uint8_t limited = 0;
-  LOOP_XYZE(i) {
-    const float jerk = FABS(current_speed[i]), maxj = max_jerk[i];
-    if (jerk > maxj) {
-      if (limited) {
-        const float mjerk = maxj * block->nominal_speed;
-        if (jerk * safe_speed > mjerk) safe_speed = mjerk / jerk;
-      }
-      else {
-        ++limited;
-        safe_speed = maxj;
-      }
-    }
-  }
-
   if (moves_queued && !UNEAR_ZERO(previous_nominal_speed)) {
     // Estimate a maximum velocity allowed at a joint of two successive segments.
     // If this maximum velocity allowed is lower than the minimum of the entry / exit safe velocities,
@@ -1273,7 +1252,7 @@ void Planner::_buffer_steps(const int32_t (&target)[XYZE], float fr_mm_s, const 
 
     // Factor to multiply the previous / current nominal velocities to get componentwise limited velocities.
     float v_factor = 1;
-    limited = 0;
+    uint8_t limited = 0;
 
     // Now limit the jerk in all axes.
     const float smaller_speed_factor = vmax_junction / previous_nominal_speed;
@@ -1439,13 +1418,15 @@ void Planner::_buffer_line(const float &a, const float &b, const float &c, const
   if (DEBUGGING(DRYRUN))
     position[E_AXIS] = target[E_AXIS];
 
-  // Always split the first move into one longer and one shorter move
+  // Always split the first move into two (if not homing or probing)
   if (!blocks_queued()) {
     #define _BETWEEN(A) (position[A##_AXIS] + target[A##_AXIS]) >> 1
     const int32_t between[XYZE] = { _BETWEEN(X), _BETWEEN(Y), _BETWEEN(Z), _BETWEEN(E) };
     DISABLE_STEPPER_DRIVER_INTERRUPT();
     _buffer_steps(between, fr_mm_s, extruder);
+    const uint8_t next = block_buffer_head;
     _buffer_steps(target, fr_mm_s, extruder);
+    SBI(block_buffer[next].flag, BLOCK_BIT_CONTINUED);
     ENABLE_STEPPER_DRIVER_INTERRUPT();
   }
   else
