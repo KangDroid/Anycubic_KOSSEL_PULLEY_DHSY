@@ -26,11 +26,13 @@ usage() {
     echo ""
 	echo -e "${bldblu}  Options:${bldcya}"
 	echo -e "	--prefix=#  Set compilation Out directory"
-	echo -e "	--clean  Clean build before compile new rom(Default yes)"
-	echo -e "	--reset  Reset repository before build(Default yes)"
-	echo -e "	--sync  Sync repository before build(Default yes)"
+	echo -e "	--clean  Clean build before compile new rom(DEFAULT: NO)"
+	echo -e "	--reset  Reset repository before build(DEFAULT: NO)"
+	echo -e "	--sync  Sync repository before build(DEFAULT: NO)"
 	echo -e "   --kossel | --anet | --core200 | --slidefast  Set Printing devices, only one printers"
-	echo -e "	--upload Upload its binary to printers."
+	echo -e "	--upload Upload its binary to printers.(DEFAULT: NO)"
+	echo -e "	--verbose Verbose build. It will show all build steps, but not the warning(DEFAULT: NO)"
+	echo -e "	--warning=none | default | more Show warning when compiling sketch(DEFAULT: NO)"
 	echo -e "${bldblu}  Example:${bldcya}"
     echo -e "    ./build_marlin_dhsy --clean=yes --reset=yes --sync=no --kossel"
 	echo -e "${txtrst}"
@@ -48,6 +50,8 @@ ARG_UPLOAD=no
 ARG_BOARD=atmega2560
 ARG_BOARDRATE=115200
 ARG_DEVICE=
+ARG_WARNING="-warnings=none"
+ARG_VERBOSE=
 
 # Variable definition
 HARDWARE1="-hardware /Applications/Arduino.app/Contents/Java/hardware"
@@ -105,6 +109,12 @@ while [ $# -gt 0 ]; do
   --upload)
 	  ARG_UPLOAD=yes
 	  ;;
+  --warning=*)
+    ARG_WARNING="-warnings=${ARG#*=}"
+    ;;
+  --verbose)
+	  ARG_VERBOSE="-verbose"
+	  ;;
     *)
       error "Unrecognized parameter $ARG"
 	  usage
@@ -145,8 +155,8 @@ cd ${DIR}
 git checkout ${ARG_DEVICE}
 
 # Compile
-arduino-builder -dump-prefs -logger=machine ${HARDWARE1} ${HARDWARE2} ${TOOLS} ${TOOLS2} ${BUILT_IN} ${LIB} ${MOTHERBOARD} -ide-version=10805 -build-path ${ARG_PREFIX_DIR} -warnings=none ${PREFS} -verbose ${INODIR} 
-arduino-builder -compile -logger=machine ${HARDWARE1} ${HARDWARE2} ${TOOLS} ${TOOLS2} ${BUILT_IN} ${LIB} ${MOTHERBOARD}  -ide-version=10805 -build-path ${ARG_PREFIX_DIR} -warnings=none ${PREFS} -verbose ${INODIR}
+arduino-builder -dump-prefs -logger=machine ${HARDWARE1} ${HARDWARE2} ${TOOLS} ${TOOLS2} ${BUILT_IN} ${LIB} ${MOTHERBOARD} -ide-version=10805 -build-path ${ARG_PREFIX_DIR} ${ARG_VERBOSE} ${PREFS} ${ARG_WARNING} ${INODIR} 
+arduino-builder -compile -logger=machine ${HARDWARE1} ${HARDWARE2} ${TOOLS} ${TOOLS2} ${BUILT_IN} ${LIB} ${MOTHERBOARD}  -ide-version=10805 -build-path ${ARG_PREFIX_DIR} ${ARG_VERBOSE} ${PREFS} ${ARG_WARNING} ${INODIR}
 
 # Upload if --upload is defined
 if [ "x${ARG_UPLOAD}" = "xyes" ]; then
