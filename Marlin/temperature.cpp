@@ -47,10 +47,6 @@
   #include "watchdog.h"
 #endif
 
-#ifdef K1 // Defined in Configuration.h in the PID settings
-  #define K2 (1.0-K1)
-#endif
-
 #if ENABLED(TEMP_SENSOR_1_AS_REDUNDANT)
   static void* heater_ttbl_map[2] = { (void*)HEATER_0_TEMPTABLE, (void*)HEATER_1_TEMPTABLE };
   static uint8_t heater_ttbllen_map[2] = { HEATER_0_TEMPTABLE_LEN, HEATER_1_TEMPTABLE_LEN };
@@ -599,7 +595,7 @@ float Temperature::get_pid_output(const int8_t e) {
   #if ENABLED(PIDTEMP)
     #if DISABLED(PID_OPENLOOP)
       pid_error[HOTEND_INDEX] = target_temperature[HOTEND_INDEX] - current_temperature[HOTEND_INDEX];
-      dTerm[HOTEND_INDEX] = K2 * PID_PARAM(Kd, HOTEND_INDEX) * (current_temperature[HOTEND_INDEX] - temp_dState[HOTEND_INDEX]) + K1 * dTerm[HOTEND_INDEX];
+      dTerm[HOTEND_INDEX] = PID_K2 * PID_PARAM(Kd, HOTEND_INDEX) * (current_temperature[HOTEND_INDEX] - temp_dState[HOTEND_INDEX]) + PID_K1 * dTerm[HOTEND_INDEX];
       temp_dState[HOTEND_INDEX] = current_temperature[HOTEND_INDEX];
       #if HEATER_IDLE_HANDLER
         if (heater_idle_timeout_exceeded[HOTEND_INDEX]) {
@@ -696,7 +692,7 @@ float Temperature::get_pid_output(const int8_t e) {
       temp_iState_bed += pid_error_bed;
       iTerm_bed = bedKi * temp_iState_bed;
 
-      dTerm_bed = K2 * bedKd * (current_temperature_bed - temp_dState_bed) + K1 * dTerm_bed;
+      dTerm_bed = PID_K2 * bedKd * (current_temperature_bed - temp_dState_bed) + PID_K1 * dTerm_bed;
       temp_dState_bed = current_temperature_bed;
 
       pid_output = pTerm_bed + iTerm_bed - dTerm_bed;
@@ -1277,7 +1273,7 @@ void Temperature::init() {
    * their target temperature by a configurable margin.
    * This is called when the temperature is set. (M104, M109)
    */
-  void Temperature::start_watching_heater(uint8_t e) {
+  void Temperature::start_watching_heater(const uint8_t e) {
     #if HOTENDS == 1
       UNUSED(e);
     #endif
@@ -2190,3 +2186,95 @@ void Temperature::isr() {
   in_temp_isr = false;
   SBI(TIMSK0, OCIE0B); //re-enable Temperature ISR
 }
+
+#if HAS_TEMP_HOTEND || HAS_TEMP_BED
+
+  void print_heater_state(const float &c, const float &t,
+    #if ENABLED(SHOW_TEMP_ADC_VALUES)
+      const float r,
+    #endif
+    const int8_t e=-2
+  ) {
+    #if !(HAS_TEMP_BED && HAS_TEMP_HOTEND) && HOTENDS <= 1
+      UNUSED(e);
+    #endif
+
+    SERIAL_PROTOCOLCHAR(' ');
+    SERIAL_PROTOCOLCHAR(
+      #if HAS_TEMP_BED && HAS_TEMP_HOTEND
+        e == -1 ? 'B' : 'T'
+      #elif HAS_TEMP_HOTEND
+        'T'
+      #else
+        'B'
+      #endif
+    );
+    #if HOTENDS > 1
+      if (e >= 0) SERIAL_PROTOCOLCHAR('0' + e);
+    #endif
+    SERIAL_PROTOCOLCHAR(':');
+    SERIAL_PROTOCOL(c);
+    SERIAL_PROTOCOLPAIR(" /" , t);
+    #if ENABLED(SHOW_TEMP_ADC_VALUES)
+      SERIAL_PROTOCOLPAIR(" (", r / OVERSAMPLENR);
+      SERIAL_PROTOCOLCHAR(')');
+    #endif
+  }
+
+  extern uint8_t target_extruder;
+
+  void Temperature::print_heaterstates() {
+    #if HAS_TEMP_HOTEND
+      print_heater_state(degHotend(target_extruder), degTargetHotend(target_extruder)
+        #if ENABLED(SHOW_TEMP_ADC_VALUES)
+          , rawHotendTemp(target_extruder)
+        #endif
+      );
+    #endif
+    #if HAS_TEMP_BED
+      print_heater_state(degBed(), degTargetBed()
+        #if ENABLED(SHOW_TEMP_ADC_VALUES)
+          , rawBedTemp()
+        #endif
+        , -1 // BED
+      );
+    #endif
+    #if HOTENDS > 1
+      HOTEND_LOOP() print_heater_state(degHotend(e), degTargetHotend(e)
+        #if ENABLED(SHOW_TEMP_ADC_VALUES)
+          , rawHotendTemp(e)
+        #endif
+        , e
+      );
+    #endif
+    SERIAL_PROTOCOLPGM(" @:");
+    SERIAL_PROTOCOL(getHeaterPower(target_extruder));
+    #if HAS_TEMP_BED
+      SERIAL_PROTOCOLPGM(" B@:");
+      SERIAL_PROTOCOL(getHeaterPower(-1));
+    #endif
+    #if HOTENDS > 1
+      HOTEND_LOOP() {
+        SERIAL_PROTOCOLPAIR(" @", e);
+        SERIAL_PROTOCOLCHAR(':');
+        SERIAL_PROTOCOL(getHeaterPower(e));
+      }
+    #endif
+  }
+
+  #if ENABLED(AUTO_REPORT_TEMPERATURES)
+
+    uint8_t Temperature::auto_report_temp_interval;
+    millis_t Temperature::next_temp_report_ms;
+
+    void Temperature::auto_report_temperatures() {
+      if (auto_report_temp_interval && ELAPSED(millis(), next_temp_report_ms)) {
+        next_temp_report_ms = millis() + 1000UL * auto_report_temp_interval;
+        print_heaterstates();
+        SERIAL_EOL();
+      }
+    }
+
+  #endif // AUTO_REPORT_TEMPERATURES
+
+#endif // HAS_TEMP_HOTEND || HAS_TEMP_BED
