@@ -29,17 +29,17 @@ ARG_BOARDRATE=115200
 ARG_DEVICE=
 
 # Variable definition
-HARDWARE1="-hardware /Users/kangdroid/Desktop/Java/hardware"
+HARDWARE1="-hardware /Applications/Arduino.app/Contents/Java/hardware"
 HARDWARE2="-hardware /Users/kangdroid/Documents/Arduino/hardware"
-TOOLS="-tools /Users/kangdroid/Desktop/Java/tools-builder"
-TOOLS2="-tools /Users/kangdroid/Desktop/Java/hardware/tools/avr"
-BUILT_IN="-built-in-libraries /Users/kangdroid/Desktop/Java/libraries"
+TOOLS="-tools /Applications/Arduino.app/Contents/Java/tools-builder"
+TOOLS2="-tools /Applications/Arduino.app/Contents/Java/hardware/tools/avr"
+BUILT_IN="-built-in-libraries /Applications/Arduino.app/Contents/Java/libraries"
 LIB="-libraries /Users/kangdroid/Documents/Arduino/libraries"
 MOTHERBOARD="-fqbn=arduino:avr:mega:cpu=atmega2560" # Default MOTHERBOARD Definition
 PREFS="-prefs=build.warn_data_percentage=0 \
-	-prefs=runtime.tools.avrdude.path=/Users/kangdroid/Desktop/Java/hardware/tools/avr \
-	-prefs=runtime.tools.arduinoOTA.path=/Users/kangdroid/Desktop/Java/hardware/tools/avr \
-	-prefs=runtime.tools.avr-gcc.path=/usr/local/avr"
+	-prefs=runtime.tools.avrdude.path=/Applications/Arduino.app/Contents/Java/hardware/tools/avr \
+	-prefs=runtime.tools.arduinoOTA.path=/Applications/Arduino.app/Contents/Java/hardware/tools/avr \
+	-prefs=runtime.tools.avr-gcc.path=/usr/local"
 INODIR=/Users/kangdroid/Desktop/School/2nd/3DPrinting/firmware/Anycubic_Kossel/Marlin/Marlin.ino
 PROGRAMMER=wiring
 
