@@ -1,25 +1,46 @@
 #!/bin/bash
 
+red=$(tput setaf 1)             #  red
+grn=$(tput setaf 2)             #  green
+ylw=$(tput setaf 3)             #  yellow
+blu=$(tput setaf 4)             #  blue
+ppl=$(tput setaf 5)             #  purple
+cya=$(tput setaf 6)             #  cyan
+txtbld=$(tput bold)             #  Bold
+bldred=${txtbld}$(tput setaf 1) #  red
+bldgrn=${txtbld}$(tput setaf 2) #  green
+bldylw=${txtbld}$(tput setaf 3) #  yellow
+bldblu=${txtbld}$(tput setaf 4) #  blue
+bldppl=${txtbld}$(tput setaf 5) #  purple
+bldcya=${txtbld}$(tput setaf 6) #  cyan
+txtrst=$(tput sgr0)             #  Reset
+rev=$(tput rev)                 #  Reverse color
+pplrev=${rev}$(tput setaf 5)
+cyarev=${rev}$(tput setaf 6)
+ylwrev=${rev}$(tput setaf 3)
+blurev=${rev}$(tput setaf 4)
+
 usage() {
-    echo -e "Usage:"
-    echo -e "  build_dhsy_marlin [options] printer_device"
+    echo -e "${bldblu}Usage:${bldcya}"
+    echo -e "  build_dhsy_marlin [options] --printer_device"
     echo ""
-	echo -e "  Options:"
+	echo -e "${bldblu}  Options:${bldcya}"
 	echo -e "	--prefix=#  Set compilation Out directory"
 	echo -e "	--clean  Clean build before compile new rom(Default yes)"
 	echo -e "	--reset  Reset repository before build(Default yes)"
 	echo -e "	--sync  Sync repository before build(Default yes)"
 	echo -e "   --kossel | --anet | --core200 | --slidefast  Set Printing devices, only one printers"
 	echo -e "	--upload Upload its binary to printers."
-	echo -e "  Example:"
+	echo -e "${bldblu}  Example:${bldcya}"
     echo -e "    ./build_marlin_dhsy --clean=yes --reset=yes --sync=no --kossel"
+	echo -e "${txtrst}"
 }
 
 # Figure out the output directories
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 # Default Options
-ARG_PREFIX_DIR=$TMPDIR
+ARG_PREFIX_DIR=/Users/kangdroid/Desktop/FIRWMARE_OUT
 ARG_CLEAN_OPT=no
 ARG_RESET_OPT=no
 ARG_SYNC_OPT=no
@@ -78,7 +99,7 @@ while [ $# -gt 0 ]; do
 	  ARG_PORT=/dev/cu.SLAB_USBtoUART
 	  ;;
   --SlideFast | --Slidefast | --slidefast)
-	  ARG_DEVICE=SlideFast
+	  ARG_DEVICE=slidefast
 	  ARG_PORT=/dev/cu.usbmodem1421
 	  ;;
   --upload)
@@ -99,7 +120,7 @@ fi
 
 # Sync Repository
 if [ "x${ARG_SYNC_OPT}" = "xyes" ]; then
-	echo "Syncing repository"
+	echo "${bldcya}Syncing repository${txtrst}"
 	cd ${DIR}
 	git checkout ${ARG_DEVICE}
 	git pull kangdroid ${ARG_DEVICE}
@@ -108,13 +129,13 @@ fi
 
 # Reset Repository
 if [ "x${ARG_RESET_OPT}" = "xyes" ]; then
-	echo "Resettings whole source tree."
+	echo "${bldcya}Resettings whole source tree.${txtrst}"
 	git reset --hard
 fi
 
 # Check if printers is empty
 if [ -z "${ARG_DEVICE}"]; then
-	echo "STOPPING: you must define your printers."
+	echo "${bldred}STOPPING: you must define your printers.${txtrst}"
 	usage
 	exit 0
 fi
@@ -124,8 +145,8 @@ cd ${DIR}
 git checkout ${ARG_DEVICE}
 
 # Compile
-arduino-builder -dump-prefs -logger=machine ${HARDWARE1} ${HARDWARE2} ${TOOLS} ${TOOLS2} ${BUILT_IN} ${LIB} ${MOTHERBOARD} -ide-version=10805 -build-path ${ARG_PREFIX_DIR} -warnings=all ${PREFS} -verbose ${INODIR}
-arduino-builder -compile -logger=machine ${HARDWARE1} ${HARDWARE2} ${TOOLS} ${TOOLS2} ${BUILT_IN} ${LIB} ${MOTHERBOARD}  -ide-version=10805 -build-path ${ARG_PREFIX_DIR} -warnings=all ${PREFS} -verbose ${INODIR}
+arduino-builder -dump-prefs -logger=machine ${HARDWARE1} ${HARDWARE2} ${TOOLS} ${TOOLS2} ${BUILT_IN} ${LIB} ${MOTHERBOARD} -ide-version=10805 -build-path ${ARG_PREFIX_DIR} -warnings=none ${PREFS} -verbose ${INODIR} 
+arduino-builder -compile -logger=machine ${HARDWARE1} ${HARDWARE2} ${TOOLS} ${TOOLS2} ${BUILT_IN} ${LIB} ${MOTHERBOARD}  -ide-version=10805 -build-path ${ARG_PREFIX_DIR} -warnings=none ${PREFS} -verbose ${INODIR}
 
 # Upload if --upload is defined
 if [ "x${ARG_UPLOAD}" = "xyes" ]; then
