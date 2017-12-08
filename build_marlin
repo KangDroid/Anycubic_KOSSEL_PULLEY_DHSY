@@ -1,0 +1,133 @@
+#!/bin/bash
+
+usage() {
+    echo -e "Usage:"
+    echo -e "  build_dhsy_marlin [options] printer_device"
+    echo ""
+	echo -e "  Options:"
+	echo -e "	--prefix=#  Set compilation Out directory"
+	echo -e "	--clean  Clean build before compile new rom(Default yes)"
+	echo -e "	--reset  Reset repository before build(Default yes)"
+	echo -e "	--sync  Sync repository before build(Default yes)"
+	echo -e "   --kossel | --anet | --core200 | --slidefast  Set Printing devices, only one printers"
+	echo -e "	--upload Upload its binary to printers."
+	echo -e "  Example:"
+    echo -e "    ./build_marlin_dhsy --clean=yes --reset=yes --sync=no --kossel"
+}
+
+# Figure out the output directories
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+# Default Options
+ARG_PREFIX_DIR=$TMPDIR
+ARG_CLEAN_OPT=no
+ARG_RESET_OPT=no
+ARG_SYNC_OPT=no
+ARG_UPLOAD=no
+ARG_BOARD=atmega2560
+ARG_BOARDRATE=115200
+ARG_DEVICE=
+
+# Variable definition
+HARDWARE1="-hardware /Users/kangdroid/Desktop/Java/hardware"
+HARDWARE2="-hardware /Users/kangdroid/Documents/Arduino/hardware"
+TOOLS="-tools /Users/kangdroid/Desktop/Java/tools-builder"
+TOOLS2="-tools /Users/kangdroid/Desktop/Java/hardware/tools/avr"
+BUILT_IN="-built-in-libraries /Users/kangdroid/Desktop/Java/libraries"
+LIB="-libraries /Users/kangdroid/Documents/Arduino/libraries"
+MOTHERBOARD="-fqbn=arduino:avr:mega:cpu=atmega2560" # Default MOTHERBOARD Definition
+PREFS="-prefs=build.warn_data_percentage=0 \
+	-prefs=runtime.tools.avrdude.path=/Users/kangdroid/Desktop/Java/hardware/tools/avr \
+	-prefs=runtime.tools.arduinoOTA.path=/Users/kangdroid/Desktop/Java/hardware/tools/avr \
+	-prefs=runtime.tools.avr-gcc.path=/usr/local/avr"
+INODIR=/Users/kangdroid/Desktop/School/2nd/3DPrinting/firmware/Anycubic_Kossel/Marlin/Marlin.ino
+PROGRAMMER=wiring
+
+# Check command line variables before we begin.
+while [ $# -gt 0 ]; do
+  ARG=$1
+  ARG_PARMS="$ARG_PARMS '$ARG'"
+  shift
+  case "$ARG" in
+    --prefix=*)
+      ARG_PREFIX_DIR="${ARG#*=}"
+      ;;
+    --clean)
+      ARG_CLEAN_OPT="yes"
+      ;;
+    --reset)
+      ARG_RESET_OPT="yes"
+      ;;
+    --sync)
+      ARG_SYNC_OPT="yes"
+      ;;
+  --anet | --Anet | --AnetA8 | --aneta8)
+	  ARG_DEVICE=AnetA8
+	  ARG_PORT=/dev/cu.wchusbserial1420
+	  ARG_BOARD=atmega1284p
+	  ARG_BOARDRATE=57600
+	  MOTHERBOARD="-fqbn=anet:avr:anet"
+	  PROGRAMMER=arduino
+	  ;;
+  --core200 | --Core200 | --core | --Core)
+	  ARG_DEVICE=core200
+	  ARG_PORT=/dev/cu.usbmodem1421
+	  ;;
+  --Kossel | --kossel)
+	  ARG_DEVICE=kossel
+	  ARG_PORT=/dev/cu.SLAB_USBtoUART
+	  ;;
+  --SlideFast | --Slidefast | --slidefast)
+	  ARG_DEVICE=SlideFast
+	  ARG_PORT=/dev/cu.usbmodem1421
+	  ;;
+  --upload)
+	  ARG_UPLOAD=yes
+	  ;;
+    *)
+      error "Unrecognized parameter $ARG"
+	  usage
+      ;;
+  esac
+done
+
+# Cleaning options
+if [ "x${ARG_CLEAN_OPT}" = "xyes" ]; then
+	cd ${ARG_PREFIX_DIR}
+	rm -rf ./*
+fi
+
+# Sync Repository
+if [ "x${ARG_SYNC_OPT}" = "xyes" ]; then
+	echo "Syncing repository"
+	cd ${DIR}
+	git checkout ${ARG_DEVICE}
+	git pull kangdroid ${ARG_DEVICE}
+	
+fi
+
+# Reset Repository
+if [ "x${ARG_RESET_OPT}" = "xyes" ]; then
+	echo "Resettings whole source tree."
+	git reset --hard
+fi
+
+# Check if printers is empty
+if [ -z "${ARG_DEVICE}"]; then
+	echo "STOPPING: you must define your printers."
+	usage
+	exit 0
+fi
+
+# Checkout before we start.
+cd ${DIR}
+git checkout ${ARG_DEVICE}
+
+# Compile
+arduino-builder -dump-prefs -logger=machine ${HARDWARE1} ${HARDWARE2} ${TOOLS} ${TOOLS2} ${BUILT_IN} ${LIB} ${MOTHERBOARD} -ide-version=10805 -build-path ${ARG_PREFIX_DIR} -warnings=all ${PREFS} -verbose ${INODIR}
+arduino-builder -compile -logger=machine ${HARDWARE1} ${HARDWARE2} ${TOOLS} ${TOOLS2} ${BUILT_IN} ${LIB} ${MOTHERBOARD}  -ide-version=10805 -build-path ${ARG_PREFIX_DIR} -warnings=all ${PREFS} -verbose ${INODIR}
+
+# Upload if --upload is defined
+if [ "x${ARG_UPLOAD}" = "xyes" ]; then
+	avrdude -C/Applications/Arduino.app/Contents/Java/hardware/tools/avr/etc/avrdude.conf -v -p${ARG_BOARD} -c${PROGRAMMER} -P${ARG_PORT} -b${ARG_BOARDRATE} -D -Uflash:w:${ARG_PREFIX_DIR}/Marlin.ino.hex:i
+fi
