@@ -138,10 +138,10 @@ class Stepper {
     #endif // !LIN_ADVANCE
 
     static long acceleration_time, deceleration_time;
-    //unsigned long accelerate_until, decelerate_after, acceleration_rate, initial_rate, final_rate, nominal_rate;
-    static unsigned short acc_step_rate; // needed for deceleration start point
     static uint8_t step_loops, step_loops_nominal;
-    static unsigned short OCR1A_nominal;
+
+    static uint16_t OCR1A_nominal,
+                    acc_step_rate; // needed for deceleration start point
 
     static volatile long endstops_trigsteps[XYZ];
     static volatile long endstops_stepsTotal, endstops_stepsDone;
@@ -209,7 +209,7 @@ class Stepper {
     //
     // Get the position of a stepper, in steps
     //
-    static long position(AxisEnum axis);
+    static long position(const AxisEnum axis);
 
     //
     // Report the positions of the steppers, in steps
@@ -219,13 +219,13 @@ class Stepper {
     //
     // Get the position (mm) of an axis based on stepper position(s)
     //
-    static float get_axis_position_mm(AxisEnum axis);
+    static float get_axis_position_mm(const AxisEnum axis);
 
     //
     // SCARA AB axes are in degrees, not mm
     //
     #if IS_SCARA
-      FORCE_INLINE static float get_axis_position_degrees(AxisEnum axis) { return get_axis_position_mm(axis); }
+      FORCE_INLINE static float get_axis_position_degrees(const AxisEnum axis) { return get_axis_position_mm(axis); }
     #endif
 
     //
@@ -247,7 +247,7 @@ class Stepper {
     //
     // The direction of a single motor
     //
-    FORCE_INLINE static bool motor_direction(AxisEnum axis) { return TEST(last_direction_bits, axis); }
+    FORCE_INLINE static bool motor_direction(const AxisEnum axis) { return TEST(last_direction_bits, axis); }
 
     #if HAS_DIGIPOTSS || HAS_MOTOR_CURRENT_PWM
       static void digitalPotWrite(const int16_t address, const int16_t value);
@@ -287,12 +287,12 @@ class Stepper {
     //
     // Handle a triggered endstop
     //
-    static void endstop_triggered(AxisEnum axis);
+    static void endstop_triggered(const AxisEnum axis);
 
     //
     // Triggered position of an axis in mm (not core-savvy)
     //
-    FORCE_INLINE static float triggered_position_mm(AxisEnum axis) {
+    FORCE_INLINE static float triggered_position_mm(const AxisEnum axis) {
       return endstops_trigsteps[axis] * planner.steps_to_mm[axis];
     }
 
@@ -302,7 +302,7 @@ class Stepper {
 
   private:
 
-    FORCE_INLINE static unsigned short calc_timer(unsigned short step_rate) {
+    FORCE_INLINE static unsigned short calc_timer_interval(unsigned short step_rate) {
       unsigned short timer;
 
       NOMORE(step_rate, MAX_STEP_FREQUENCY);
@@ -356,12 +356,9 @@ class Stepper {
 
       deceleration_time = 0;
       // step_rate to timer interval
-      OCR1A_nominal = calc_timer(current_block->nominal_rate);
+      OCR1A_nominal = calc_timer_interval(current_block->nominal_rate);
       // make a note of the number of step loops required at nominal speed
       step_loops_nominal = step_loops;
-      acc_step_rate = current_block->initial_rate;
-      acceleration_time = calc_timer(acc_step_rate);
-      _NEXT_ISR(acceleration_time);
 
       #if ENABLED(LIN_ADVANCE)
         if (current_block->use_advance_lead) {
