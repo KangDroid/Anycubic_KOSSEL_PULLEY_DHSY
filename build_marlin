@@ -34,7 +34,7 @@ usage() {
 	echo -e "	--verbose Verbose build. It will show all build steps, but not the warning(DEFAULT: NO)"
 	echo -e "	--warning=none | default | more Show warning when compiling sketch(DEFAULT: NO)"
 	echo -e "${bldblu}  Example:${bldcya}"
-    echo -e "    ./build_marlin_dhsy --clean=yes --reset=yes --sync=no --kossel"
+    echo -e "    ./build_marlin_dhsy --clean --reset --sync --kossel --warning=default"
 	echo -e "${txtrst}"
 }
 
