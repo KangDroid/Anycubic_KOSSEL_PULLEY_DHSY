@@ -990,12 +990,7 @@
  * - AUTO_BED_LEVELING_UBL (Unified Bed Leveling)
  *   A comprehensive bed leveling system combining the features and benefits
  *   of other systems. UBL also includes integrated Mesh Generation, Mesh
- *   Validation and Mesh Editing systems. Currently, UBL is only checked out
- *   for Cartesian Printers. That said, it was primarily designed to correct
- *   poor quality Delta Printers. If you feel adventurous and have a Delta,
- *   please post an issue if something doesn't work correctly. Initially,
- *   you will need to set a reduced bed size so you have a rectangular area
- *   to test on.
+ *   Validation and Mesh Editing systems.
  *
  * - MESH_BED_LEVELING
  *   Probe a grid manually
@@ -1024,7 +1019,8 @@
   //#define ENABLE_LEVELING_FADE_HEIGHT
 
   // For Cartesian machines, instead of dividing moves on mesh boundaries,
-  // split up moves into short segments like a Delta.
+  // split up moves into short segments like a Delta. This follows the
+  // contours of the bed more closely than edge-to-edge straight moves.
   #define SEGMENT_LEVELED_MOVES
   #define LEVELED_SEGMENT_LENGTH 5.0 // (mm) Length of all segments (except the last one)
 

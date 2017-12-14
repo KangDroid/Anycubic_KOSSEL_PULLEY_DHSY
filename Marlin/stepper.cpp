@@ -141,9 +141,10 @@ volatile signed char Stepper::count_direction[NUM_AXIS] = { 1, 1, 1, 1 };
   long Stepper::counter_m[MIXING_STEPPERS];
 #endif
 
-unsigned short Stepper::acc_step_rate; // needed for deceleration start point
 uint8_t Stepper::step_loops, Stepper::step_loops_nominal;
-unsigned short Stepper::OCR1A_nominal;
+
+uint16_t Stepper::OCR1A_nominal,
+         Stepper::acc_step_rate; // needed for deceleration start point
 
 volatile long Stepper::endstops_trigsteps[XYZ];
 
@@ -446,10 +447,13 @@ void Stepper::isr() {
   }
 
   // If there is no current block, attempt to pop one from the buffer
+  bool first_step = false;
   if (!current_block) {
     // Anything in the buffer?
     if ((current_block = planner.get_current_block())) {
       trapezoid_generator_reset();
+      TCNT1 = 0;  // make sure first pulse is not truncated
+      first_step = true;
 
       // Initialize Bresenham counters to 1/2 the ceiling
       counter_X = counter_Y = counter_Z = counter_E = -(current_block->step_event_count >> 1);
@@ -704,19 +708,25 @@ void Stepper::isr() {
   // Calculate new timer value
   if (step_events_completed <= (uint32_t)current_block->accelerate_until) {
 
-    MultiU24X32toH16(acc_step_rate, acceleration_time, current_block->acceleration_rate);
-    acc_step_rate += current_block->initial_rate;
+    if (first_step) {
+      acc_step_rate = current_block->initial_rate;
+      acceleration_time = 0;
+    }
+    else {
+      MultiU24X32toH16(acc_step_rate, acceleration_time, current_block->acceleration_rate);
+      acc_step_rate += current_block->initial_rate;
+    }
 
     // upper limit
     NOMORE(acc_step_rate, current_block->nominal_rate);
 
     // step_rate to timer interval
-    const uint16_t timer = calc_timer(acc_step_rate);
+    const uint16_t interval = calc_timer_interval(acc_step_rate);
 
-    SPLIT(timer);  // split step into multiple ISRs if larger than  ENDSTOP_NOMINAL_OCR_VAL
+    SPLIT(interval);  // split step into multiple ISRs if larger than ENDSTOP_NOMINAL_OCR_VAL
     _NEXT_ISR(ocr_val);
 
-    acceleration_time += timer;
+    acceleration_time += interval;
 
     #if ENABLED(LIN_ADVANCE)
 
@@ -728,7 +738,7 @@ void Stepper::isr() {
           current_estep_rate[TOOL_E_INDEX] = ((uint32_t)acc_step_rate * current_block->abs_adv_steps_multiplier8) >> 17;
         #endif
       }
-      eISR_Rate = adv_rate(e_steps[TOOL_E_INDEX], timer, step_loops);
+      eISR_Rate = adv_rate(e_steps[TOOL_E_INDEX], interval, step_loops);
 
     #endif // LIN_ADVANCE
   }
@@ -744,12 +754,12 @@ void Stepper::isr() {
       step_rate = current_block->final_rate;
 
     // step_rate to timer interval
-    const uint16_t timer = calc_timer(step_rate);
+    const uint16_t interval = calc_timer_interval(step_rate);
 
-    SPLIT(timer);  // split step into multiple ISRs if larger than  ENDSTOP_NOMINAL_OCR_VAL
+    SPLIT(interval);  // split step into multiple ISRs if larger than ENDSTOP_NOMINAL_OCR_VAL
     _NEXT_ISR(ocr_val);
 
-    deceleration_time += timer;
+    deceleration_time += interval;
 
     #if ENABLED(LIN_ADVANCE)
 
@@ -761,7 +771,7 @@ void Stepper::isr() {
           current_estep_rate[TOOL_E_INDEX] = ((uint32_t)step_rate * current_block->abs_adv_steps_multiplier8) >> 17;
         #endif
       }
-      eISR_Rate = adv_rate(e_steps[TOOL_E_INDEX], timer, step_loops);
+      eISR_Rate = adv_rate(e_steps[TOOL_E_INDEX], interval, step_loops);
 
     #endif // LIN_ADVANCE
   }
@@ -776,7 +786,7 @@ void Stepper::isr() {
 
     #endif
 
-    SPLIT(OCR1A_nominal);  // split step into multiple ISRs if larger than  ENDSTOP_NOMINAL_OCR_VAL
+    SPLIT(OCR1A_nominal);  // split step into multiple ISRs if larger than ENDSTOP_NOMINAL_OCR_VAL
     _NEXT_ISR(ocr_val);
 
     // ensure we're running at the correct step rate, even if we just came off an acceleration
@@ -1188,7 +1198,7 @@ void Stepper::set_e_position(const long &e) {
 /**
  * Get a stepper's position in steps.
  */
-long Stepper::position(AxisEnum axis) {
+long Stepper::position(const AxisEnum axis) {
   CRITICAL_SECTION_START;
   const long count_pos = count_position[axis];
   CRITICAL_SECTION_END;
@@ -1199,7 +1209,7 @@ long Stepper::position(AxisEnum axis) {
  * Get an axis position according to stepper position(s)
  * For CORE machines apply translation from ABC to XYZ.
  */
-float Stepper::get_axis_position_mm(AxisEnum axis) {
+float Stepper::get_axis_position_mm(const AxisEnum axis) {
   float axis_steps;
   #if IS_CORE
     // Requesting one of the "core" axes?
