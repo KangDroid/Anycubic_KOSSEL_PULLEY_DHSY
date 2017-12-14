@@ -247,7 +247,7 @@ void Planner::calculate_trapezoid_for_block(block_t* const block, const float &e
 
 
 // The kernel called by recalculate() when scanning the plan from last to first entry.
-void Planner::reverse_pass_kernel(block_t* const current, const block_t *next) {
+void Planner::reverse_pass_kernel(block_t* const current, const block_t * const next) {
   if (!current || !next) return;
   // If entry speed is already at the maximum entry speed, no need to recheck. Block is cruising.
   // If not, block in state of acceleration or deceleration. Reset entry speed to maximum and
@@ -268,31 +268,25 @@ void Planner::reverse_pass_kernel(block_t* const current, const block_t *next) {
  * Once in reverse and once forward. This implements the reverse pass.
  */
 void Planner::reverse_pass() {
-
   if (movesplanned() > 3) {
+    const uint8_t endnr = BLOCK_MOD(block_buffer_tail + 2); // tail is running. tail+1 shouldn't be altered because it's connected to the running block.
+                                                            // tail+2 because the index is not yet advanced when checked
+    uint8_t blocknr = prev_block_index(block_buffer_head);
+    block_t* current = &block_buffer[blocknr];
 
-    block_t* block[3] = { NULL, NULL, NULL };
-
-    // Make a local copy of block_buffer_tail, because the interrupt can alter it
-    // Is a critical section REALLY needed for a single byte change?
-    //CRITICAL_SECTION_START;
-    uint8_t tail = block_buffer_tail;
-    //CRITICAL_SECTION_END
-
-    uint8_t b = BLOCK_MOD(block_buffer_head - 3);
-    while (b != tail) {
-      if (block[0] && TEST(block[0]->flag, BLOCK_BIT_START_FROM_FULL_HALT)) break;
-      b = prev_block_index(b);
-      block[2] = block[1];
-      block[1] = block[0];
-      block[0] = &block_buffer[b];
-      reverse_pass_kernel(block[1], block[2]);
-    }
+    do {
+      const block_t * const next = current;
+      blocknr = prev_block_index(blocknr);
+      current = &block_buffer[blocknr];
+      if (TEST(current->flag, BLOCK_BIT_START_FROM_FULL_HALT)) // Up to this every block is already optimized.
+        break;
+      reverse_pass_kernel(current, next);
+    } while (blocknr != endnr);
   }
 }
 
 // The kernel called by recalculate() when scanning the plan from first to last entry.
-void Planner::forward_pass_kernel(const block_t* previous, block_t* const current) {
+void Planner::forward_pass_kernel(const block_t * const previous, block_t* const current) {
   if (!previous) return;
 
   // If the previous block is an acceleration block, but it is not long enough to complete the
@@ -344,8 +338,8 @@ void Planner::recalculate_trapezoids() {
       // Recalculate if current block entry or exit junction speed has changed.
       if (TEST(current->flag, BLOCK_BIT_RECALCULATE) || TEST(next->flag, BLOCK_BIT_RECALCULATE)) {
         // NOTE: Entry and exit factors always > 0 by all previous logic operations.
-        float nom = current->nominal_speed;
-        calculate_trapezoid_for_block(current, current->entry_speed / nom, next->entry_speed / nom);
+        const float nomr = 1.0 / current->nominal_speed;
+        calculate_trapezoid_for_block(current, current->entry_speed * nomr, next->entry_speed * nomr);
         CBI(current->flag, BLOCK_BIT_RECALCULATE); // Reset current only to ensure next trapezoid is computed
       }
     }
@@ -353,8 +347,8 @@ void Planner::recalculate_trapezoids() {
   }
   // Last/newest block in buffer. Exit speed is set with MINIMUM_PLANNER_SPEED. Always recalculated.
   if (next) {
-    float nom = next->nominal_speed;
-    calculate_trapezoid_for_block(next, next->entry_speed / nom, (MINIMUM_PLANNER_SPEED) / nom);
+    const float nomr = 1.0 / next->nominal_speed;
+    calculate_trapezoid_for_block(next, next->entry_speed * nomr, (MINIMUM_PLANNER_SPEED) * nomr);
     CBI(next->flag, BLOCK_BIT_RECALCULATE);
   }
 }
@@ -556,16 +550,44 @@ void Planner::check_axes_activity() {
   #endif
 }
 
+/**
+ * Get a volumetric multiplier from a filament diameter.
+ * This is the reciprocal of the circular cross-section area.
+ * Return 1.0 with volumetric off or a diameter of 0.0.
+ */
 inline float calculate_volumetric_multiplier(const float &diameter) {
   return (parser.volumetric_enabled && diameter) ? 1.0 / CIRCLE_AREA(diameter * 0.5) : 1.0;
 }
 
+/**
+ * Convert the filament sizes into volumetric multipliers.
+ * The multiplier converts a given E value into a length.
+ */
 void Planner::calculate_volumetric_multipliers() {
   for (uint8_t i = 0; i < COUNT(filament_size); i++) {
     volumetric_multiplier[i] = calculate_volumetric_multiplier(filament_size[i]);
     refresh_e_factor(i);
   }
 }
+
+#if ENABLED(FILAMENT_WIDTH_SENSOR)
+  /**
+   * Convert the ratio value given by the filament width sensor
+   * into a volumetric multiplier. Conversion differs when using
+   * linear extrusion vs volumetric extrusion.
+   */
+  void Planner::calculate_volumetric_for_width_sensor(const int8_t encoded_ratio) {
+    // Reconstitute the nominal/measured ratio
+    const float nom_meas_ratio = 1.0 + 0.01 * encoded_ratio,
+                ratio_2 = sq(nom_meas_ratio);
+
+    volumetric_multiplier[FILAMENT_SENSOR_EXTRUDER_NUM] = parser.volumetric_enabled
+      ? ratio_2 / CIRCLE_AREA(filament_width_nominal * 0.5) // Volumetric uses a true volumetric multiplier
+      : ratio_2;                                            // Linear squares the ratio, which scales the volume
+
+    refresh_e_factor(FILAMENT_SENSOR_EXTRUDER_NUM);
+  }
+#endif
 
 #if PLANNER_LEVELING
   /**
@@ -575,14 +597,7 @@ void Planner::calculate_volumetric_multipliers() {
   void Planner::apply_leveling(float &rx, float &ry, float &rz) {
 
     #if ENABLED(SKEW_CORRECTION)
-      if (WITHIN(rx, X_MIN_POS + 1, X_MAX_POS) && WITHIN(ry, Y_MIN_POS + 1, Y_MAX_POS)) {
-        const float tempry = ry - (rz * planner.yz_skew_factor),
-                    temprx = rx - (ry * planner.xy_skew_factor) - (rz * (planner.xz_skew_factor - (planner.xy_skew_factor * planner.yz_skew_factor)));
-        if (WITHIN(temprx, X_MIN_POS, X_MAX_POS) && WITHIN(tempry, Y_MIN_POS, Y_MAX_POS)) {
-          rx = temprx;
-          ry = tempry;
-        }
-      }
+      skew(rx, ry, rz);
     #endif
 
     if (!leveling_active) return;
@@ -611,7 +626,7 @@ void Planner::calculate_volumetric_multipliers() {
       #endif
 
       rz += (
-        #if ENABLED(AUTO_BED_LEVELING_UBL) // UBL_DELTA
+        #if ENABLED(AUTO_BED_LEVELING_UBL)
           ubl.get_z_correction(rx, ry) * fade_scaling_factor
         #elif ENABLED(MESH_BED_LEVELING)
           mbl.get_z(rx, ry
@@ -673,14 +688,7 @@ void Planner::calculate_volumetric_multipliers() {
     }
 
     #if ENABLED(SKEW_CORRECTION)
-      if (WITHIN(raw[X_AXIS], X_MIN_POS, X_MAX_POS) && WITHIN(raw[Y_AXIS], Y_MIN_POS, Y_MAX_POS)) {
-        const float temprx = raw[X_AXIS] + raw[Y_AXIS] * planner.xy_skew_factor + raw[Z_AXIS] * planner.xz_skew_factor,
-                    tempry = raw[Y_AXIS] + raw[Z_AXIS] * planner.yz_skew_factor;
-        if (WITHIN(temprx, X_MIN_POS, X_MAX_POS) && WITHIN(tempry, Y_MIN_POS, Y_MAX_POS)) {
-          raw[X_AXIS] = temprx;
-          raw[Y_AXIS] = tempry;
-        }
-      }
+      unskew(raw[X_AXIS], raw[Y_AXIS], raw[Z_AXIS]);
     #endif
   }
 
@@ -1009,7 +1017,7 @@ void Planner::_buffer_steps(const int32_t (&target)[XYZE], float fr_mm_s, const 
       #endif
     );
   }
-  float inverse_millimeters = 1.0 / block->millimeters;  // Inverse millimeters to remove multiple divides
+  const float inverse_millimeters = 1.0 / block->millimeters;  // Inverse millimeters to remove multiple divides
 
   // Calculate inverse time for this move. No divide by zero due to previous checks.
   // Example: At 120mm/s a 60mm move takes 0.5s. So this will give 2.0.
@@ -1048,7 +1056,7 @@ void Planner::_buffer_steps(const int32_t (&target)[XYZE], float fr_mm_s, const 
     //FMM update ring buffer used for delay with filament measurements
     if (extruder == FILAMENT_SENSOR_EXTRUDER_NUM && filwidth_delay_index[1] >= 0) {  //only for extruder with filament sensor and if ring buffer is initialized
 
-      const int MMD_CM = MAX_MEASUREMENT_DELAY + 1, MMD_MM = MMD_CM * 10;
+      constexpr int MMD_CM = MAX_MEASUREMENT_DELAY + 1, MMD_MM = MMD_CM * 10;
 
       // increment counters with next move in e axis
       filwidth_e_count += delta_mm[E_AXIS];
@@ -1066,7 +1074,7 @@ void Planner::_buffer_steps(const int32_t (&target)[XYZE], float fr_mm_s, const 
         // If the index has changed (must have gone forward)...
         if (filwidth_delay_index[0] != filwidth_delay_index[1]) {
           filwidth_e_count = 0; // Reset the E movement counter
-          const uint8_t meas_sample = thermalManager.widthFil_to_size_ratio() - 100; // Subtract 100 to reduce magnitude - to store in a signed char
+          const uint8_t meas_sample = thermalManager.widthFil_to_size_ratio();
           do {
             filwidth_delay_index[1] = (filwidth_delay_index[1] + 1) % MMD_CM; // The next unused slot
             measurement_delay[filwidth_delay_index[1]] = meas_sample;         // Store the measurement
@@ -1081,7 +1089,8 @@ void Planner::_buffer_steps(const int32_t (&target)[XYZE], float fr_mm_s, const 
   float max_stepper_speed = 0, min_axis_accel_ratio = 1; // ratio < 1 means acceleration ramp needed
   LOOP_XYZE(i) {
     const float cs = FABS((current_speed[i] = delta_mm[i] * inverse_secs));
-    NOMORE(min_axis_accel_ratio, max_jerk[i] / cs);
+    if (cs >  max_jerk[i]) 
+      NOMORE(min_axis_accel_ratio, max_jerk[i] / cs);
     NOLESS(max_stepper_speed, cs);
     #if ENABLED(DISTINCT_E_FACTORS)
       if (i == E_AXIS) i += extruder;
@@ -1344,7 +1353,8 @@ void Planner::_buffer_steps(const int32_t (&target)[XYZE], float fr_mm_s, const 
 
   #endif // LIN_ADVANCE
 
-  calculate_trapezoid_for_block(block, block->entry_speed / block->nominal_speed, safe_speed / block->nominal_speed);
+  const float bnsr = 1.0 / block->nominal_speed;
+  calculate_trapezoid_for_block(block, block->entry_speed * bnsr, safe_speed * bnsr);
 
   // Move buffer head
   block_buffer_head = next_buffer_head;
@@ -1358,7 +1368,7 @@ void Planner::_buffer_steps(const int32_t (&target)[XYZE], float fr_mm_s, const 
 } // _buffer_steps()
 
 /**
- * Planner::_buffer_line
+ * Planner::buffer_segment
  *
  * Add a new linear movement to the buffer in axis units.
  *
@@ -1368,7 +1378,7 @@ void Planner::_buffer_steps(const int32_t (&target)[XYZE], float fr_mm_s, const 
  *  fr_mm_s   - (target) speed of the move
  *  extruder  - target extruder
  */
-void Planner::_buffer_line(const float &a, const float &b, const float &c, const float &e, const float &fr_mm_s, const uint8_t extruder) {
+void Planner::buffer_segment(const float &a, const float &b, const float &c, const float &e, const float &fr_mm_s, const uint8_t extruder) {
   // When changing extruders recalculate steps corresponding to the E position
   #if ENABLED(DISTINCT_E_FACTORS)
     if (last_extruder != extruder && axis_steps_per_mm[E_AXIS_N] != axis_steps_per_mm[E_AXIS + last_extruder]) {
@@ -1387,7 +1397,7 @@ void Planner::_buffer_line(const float &a, const float &b, const float &c, const
   };
 
   /* <-- add a slash to enable
-    SERIAL_ECHOPAIR("  _buffer_line FR:", fr_mm_s);
+    SERIAL_ECHOPAIR("  buffer_segment FR:", fr_mm_s);
     #if IS_KINEMATIC
       SERIAL_ECHOPAIR(" A:", a);
       SERIAL_ECHOPAIR(" (", position[A_AXIS]);
@@ -1434,7 +1444,7 @@ void Planner::_buffer_line(const float &a, const float &b, const float &c, const
 
   stepper.wake_up();
 
-} // _buffer_line()
+} // buffer_segment()
 
 /**
  * Directly set the planner XYZ position (and stepper positions)
@@ -1459,18 +1469,18 @@ void Planner::_set_position_mm(const float &a, const float &b, const float &c, c
   ZERO(previous_speed);
 }
 
-void Planner::set_position_mm_kinematic(const float position[NUM_AXIS]) {
+void Planner::set_position_mm_kinematic(const float (&cart)[XYZE]) {
   #if PLANNER_LEVELING
-    float lpos[XYZ] = { position[X_AXIS], position[Y_AXIS], position[Z_AXIS] };
-    apply_leveling(lpos);
+    float raw[XYZ] = { cart[X_AXIS], cart[Y_AXIS], cart[Z_AXIS] };
+    apply_leveling(raw);
   #else
-    const float * const lpos = position;
+    const float (&raw)[XYZE] = cart;
   #endif
   #if IS_KINEMATIC
-    inverse_kinematics(lpos);
-    _set_position_mm(delta[A_AXIS], delta[B_AXIS], delta[C_AXIS], position[E_AXIS]);
+    inverse_kinematics(raw);
+    _set_position_mm(delta[A_AXIS], delta[B_AXIS], delta[C_AXIS], cart[E_AXIS]);
   #else
-    _set_position_mm(lpos[X_AXIS], lpos[Y_AXIS], lpos[Z_AXIS], position[E_AXIS]);
+    _set_position_mm(raw[X_AXIS], raw[Y_AXIS], raw[Z_AXIS], cart[E_AXIS]);
   #endif
 }
 
