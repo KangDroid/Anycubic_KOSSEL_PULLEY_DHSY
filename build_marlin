@@ -64,8 +64,8 @@ MOTHERBOARD="-fqbn=arduino:avr:mega:cpu=atmega2560" # Default MOTHERBOARD Defini
 PREFS="-prefs=build.warn_data_percentage=0 \
 	-prefs=runtime.tools.avrdude.path=/Applications/Arduino.app/Contents/Java/hardware/tools/avr \
 	-prefs=runtime.tools.arduinoOTA.path=/Applications/Arduino.app/Contents/Java/hardware/tools/avr \
-	-prefs=runtime.tools.avr-gcc.path=/usr/local"
-INODIR=/Users/kangdroid/Desktop/School/2nd/3DPrinting/firmware/Anycubic_Kossel/Marlin/Marlin.ino
+	-prefs=runtime.tools.avr-gcc.path=/Applications/Arduino.app/Contents/Java/hardware/tools/avr"
+INODIR=/Users/kangdroid/Desktop/Marlin/Marlin/Marlin.ino
 PROGRAMMER=wiring
 
 # Check command line variables before we begin.
@@ -126,6 +126,12 @@ done
 if [ "x${ARG_CLEAN_OPT}" = "xyes" ]; then
 	cd ${ARG_PREFIX_DIR}
 	rm -rf ./*
+fi
+
+# Create prefix if not exists
+if [ ! -d ${ARG_PREFIX_DIR} ]; then
+	echo -e "Creating directory ${ARG_PREFIX_DIR}"
+	mkdir -p ${ARG_PREFIX_DIR}
 fi
 
 # Sync Repository
