@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Marlin 3D Printer Firmware
  * Copyright (C) 2016 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
  *
@@ -506,7 +506,7 @@
   #define DELTA_DIAGONAL_ROD 217.0 // mm
 
   // height from z=0 to home position
-  #define DELTA_HEIGHT 339.25 // get this value from auto calibrate
+  #define DELTA_HEIGHT 339.35 // get this value from auto calibrate
 
   #define DELTA_ENDSTOP_ADJ { 0.0, 0.0, 0.0 } // get these from auto calibrate
 
