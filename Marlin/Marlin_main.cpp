@@ -640,9 +640,9 @@ float cartes[XYZ] = { 0 };
   bool filament_sensor = false;                                 // M405 turns on filament sensor control. M406 turns it off.
   float filament_width_nominal = DEFAULT_NOMINAL_FILAMENT_DIA,  // Nominal filament width. Change with M404.
         filament_width_meas = DEFAULT_MEASURED_FILAMENT_DIA;    // Measured filament diameter
-  uint8_t meas_delay_cm = MEASUREMENT_DELAY_CM,                 // Distance delay setting
-          measurement_delay[MAX_MEASUREMENT_DELAY + 1];         // Ring buffer to delayed measurement. Store extruder factor after subtracting 100
-  int8_t filwidth_delay_index[2] = { 0, -1 };                   // Indexes into ring buffer
+  uint8_t meas_delay_cm = MEASUREMENT_DELAY_CM;                 // Distance delay setting
+  int8_t measurement_delay[MAX_MEASUREMENT_DELAY + 1],          // Ring buffer to delayed measurement. Store extruder factor after subtracting 100
+         filwidth_delay_index[2] = { 0, -1 };                   // Indexes into ring buffer
 #endif
 
 #if ENABLED(FILAMENT_RUNOUT_SENSOR)
@@ -8446,92 +8446,107 @@ inline void gcode_M114() {
 /**
  * M115: Capabilities string
  */
+
+#if ENABLED(EXTENDED_CAPABILITIES_REPORT)
+  static void cap_line(const char * const name, bool ena=false) {
+    SERIAL_PROTOCOLPGM("Cap:");
+    serialprintPGM(name);
+    SERIAL_PROTOCOLLN(int(ena ? 1 : 0));
+  }
+#endif
+
 inline void gcode_M115() {
   SERIAL_PROTOCOLLNPGM(MSG_M115_REPORT);
 
   #if ENABLED(EXTENDED_CAPABILITIES_REPORT)
 
     // SERIAL_XON_XOFF
-    #if ENABLED(SERIAL_XON_XOFF)
-      SERIAL_PROTOCOLLNPGM("Cap:SERIAL_XON_XOFF:1");
-    #else
-      SERIAL_PROTOCOLLNPGM("Cap:SERIAL_XON_XOFF:0");
-    #endif
+    cap_line(PSTR("SERIAL_XON_XOFF")
+      #if ENABLED(SERIAL_XON_XOFF)
+        , true
+      #endif
+    );
 
     // EEPROM (M500, M501)
-    #if ENABLED(EEPROM_SETTINGS)
-      SERIAL_PROTOCOLLNPGM("Cap:EEPROM:1");
-    #else
-      SERIAL_PROTOCOLLNPGM("Cap:EEPROM:0");
-    #endif
+    cap_line(PSTR("EEPROM")
+      #if ENABLED(EEPROM_SETTINGS)
+        , true
+      #endif
+    );
+
+    // Volumetric Extrusion (M200)
+    cap_line(PSTR("VOLUMETRIC")
+      #if DISABLED(NO_VOLUMETRICS)
+        , true
+      #endif
+    );
 
     // AUTOREPORT_TEMP (M155)
-    #if ENABLED(AUTO_REPORT_TEMPERATURES)
-      SERIAL_PROTOCOLLNPGM("Cap:AUTOREPORT_TEMP:1");
-    #else
-      SERIAL_PROTOCOLLNPGM("Cap:AUTOREPORT_TEMP:0");
-    #endif
+    cap_line(PSTR("AUTOREPORT_TEMP")
+      #if ENABLED(AUTO_REPORT_TEMPERATURES)
+        , true
+      #endif
+    );
 
     // PROGRESS (M530 S L, M531 <file>, M532 X L)
-    SERIAL_PROTOCOLLNPGM("Cap:PROGRESS:0");
+    cap_line(PSTR("PROGRESS"));
 
     // Print Job timer M75, M76, M77
-    SERIAL_PROTOCOLLNPGM("Cap:PRINT_JOB:1");
+    cap_line(PSTR("PRINT_JOB"), true);
 
     // AUTOLEVEL (G29)
-    #if HAS_ABL
-      SERIAL_PROTOCOLLNPGM("Cap:AUTOLEVEL:1");
-    #else
-      SERIAL_PROTOCOLLNPGM("Cap:AUTOLEVEL:0");
-    #endif
+    cap_line(PSTR("AUTOLEVEL")
+      #if HAS_AUTOLEVEL
+        , true
+      #endif
+    );
 
     // Z_PROBE (G30)
-    #if HAS_BED_PROBE
-      SERIAL_PROTOCOLLNPGM("Cap:Z_PROBE:1");
-    #else
-      SERIAL_PROTOCOLLNPGM("Cap:Z_PROBE:0");
-    #endif
+    cap_line(PSTR("Z_PROBE")
+      #if HAS_BED_PROBE
+        , true
+      #endif
+    );
 
     // MESH_REPORT (M420 V)
-    #if HAS_LEVELING
-      SERIAL_PROTOCOLLNPGM("Cap:LEVELING_DATA:1");
-    #else
-      SERIAL_PROTOCOLLNPGM("Cap:LEVELING_DATA:0");
-    #endif
+    cap_line(PSTR("LEVELING_DATA")
+      #if HAS_LEVELING
+        , true
+      #endif
+    );
 
     // BUILD_PERCENT (M73)
-    #if ENABLED(LCD_SET_PROGRESS_MANUALLY)
-      SERIAL_PROTOCOLLNPGM("Cap:BUILD_PERCENT:1");
-    #else
-      SERIAL_PROTOCOLLNPGM("Cap:BUILD_PERCENT:0");
-    #endif
+    cap_line(PSTR("BUILD_PERCENT")
+      #if ENABLED(LCD_SET_PROGRESS_MANUALLY)
+        , true
+      #endif
+    );
 
     // SOFTWARE_POWER (M80, M81)
-    #if HAS_POWER_SWITCH
-      SERIAL_PROTOCOLLNPGM("Cap:SOFTWARE_POWER:1");
-    #else
-      SERIAL_PROTOCOLLNPGM("Cap:SOFTWARE_POWER:0");
-    #endif
+    cap_line(PSTR("SOFTWARE_POWER")
+      #if HAS_POWER_SWITCH
+        , true
+      #endif
+    );
 
     // CASE LIGHTS (M355)
-    #if HAS_CASE_LIGHT
-      SERIAL_PROTOCOLLNPGM("Cap:TOGGLE_LIGHTS:1");
-      if (USEABLE_HARDWARE_PWM(CASE_LIGHT_PIN)) {
-        SERIAL_PROTOCOLLNPGM("Cap:CASE_LIGHT_BRIGHTNESS:1");
-      }
-      else
-        SERIAL_PROTOCOLLNPGM("Cap:CASE_LIGHT_BRIGHTNESS:0");
-    #else
-      SERIAL_PROTOCOLLNPGM("Cap:TOGGLE_LIGHTS:0");
-      SERIAL_PROTOCOLLNPGM("Cap:CASE_LIGHT_BRIGHTNESS:0");
-    #endif
+    cap_line(PSTR("TOGGLE_LIGHTS")
+      #if HAS_CASE_LIGHT
+        , true
+      #endif
+    );
+    cap_line(PSTR("CASE_LIGHT_BRIGHTNESS")
+      #if HAS_CASE_LIGHT
+        , USEABLE_HARDWARE_PWM(CASE_LIGHT_PIN)
+      #endif
+    );
 
     // EMERGENCY_PARSER (M108, M112, M410)
-    #if ENABLED(EMERGENCY_PARSER)
-      SERIAL_PROTOCOLLNPGM("Cap:EMERGENCY_PARSER:1");
-    #else
-      SERIAL_PROTOCOLLNPGM("Cap:EMERGENCY_PARSER:0");
-    #endif
+    cap_line(PSTR("EMERGENCY_PARSER")
+      #if ENABLED(EMERGENCY_PARSER)
+        , true
+      #endif
+    );
 
   #endif // EXTENDED_CAPABILITIES_REPORT
 }
@@ -8669,25 +8684,29 @@ inline void gcode_M121() { endstops.enable_globally(false); }
 
 #endif // HAS_COLOR_LEDS
 
-/**
- * M200: Set filament diameter and set E axis units to cubic units
- *
- *    T<extruder> - Optional extruder number. Current extruder if omitted.
- *    D<linear> - Diameter of the filament. Use "D0" to switch back to linear units on the E axis.
- */
-inline void gcode_M200() {
+#if DISABLED(NO_VOLUMETRICS)
 
-  if (get_target_extruder_from_command(200)) return;
+  /**
+   * M200: Set filament diameter and set E axis units to cubic units
+   *
+   *    T<extruder> - Optional extruder number. Current extruder if omitted.
+   *    D<linear> - Diameter of the filament. Use "D0" to switch back to linear units on the E axis.
+   */
+  inline void gcode_M200() {
 
-  if (parser.seen('D')) {
-    // setting any extruder filament size disables volumetric on the assumption that
-    // slicers either generate in extruder values as cubic mm or as as filament feeds
-    // for all extruders
-    if ( (parser.volumetric_enabled = (parser.value_linear_units() != 0.0)) )
-      planner.set_filament_size(target_extruder, parser.value_linear_units());
+    if (get_target_extruder_from_command(200)) return;
+
+    if (parser.seen('D')) {
+      // setting any extruder filament size disables volumetric on the assumption that
+      // slicers either generate in extruder values as cubic mm or as as filament feeds
+      // for all extruders
+      if ( (parser.volumetric_enabled = (parser.value_linear_units() != 0.0)) )
+        planner.set_filament_size(target_extruder, parser.value_linear_units());
+    }
+    planner.calculate_volumetric_multipliers();
   }
-  planner.calculate_volumetric_multipliers();
-}
+
+#endif // !NO_VOLUMETRICS
 
 /**
  * M201: Set max acceleration in units/s^2 for print moves (M201 X1000 Y1000)
@@ -9569,7 +9588,7 @@ inline void gcode_M400() { stepper.synchronize(); }
     }
 
     if (filwidth_delay_index[1] == -1) { // Initialize the ring buffer if not done since startup
-      const uint8_t temp_ratio = thermalManager.widthFil_to_size_ratio();
+      const int8_t temp_ratio = thermalManager.widthFil_to_size_ratio();
 
       for (uint8_t i = 0; i < COUNT(measurement_delay); ++i)
         measurement_delay[i] = temp_ratio;
@@ -12036,9 +12055,12 @@ void process_parsed_command() {
         #endif
       #endif
 
-      case 200: // M200: Set filament diameter, E to cubic units
-        gcode_M200();
-        break;
+      #if DISABLED(NO_VOLUMETRICS)
+        case 200: // M200: Set filament diameter, E to cubic units
+          gcode_M200();
+          break;
+      #endif
+
       case 201: // M201: Set max acceleration for print moves (units/s^2)
         gcode_M201();
         break;
