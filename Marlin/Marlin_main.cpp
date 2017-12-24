@@ -12749,7 +12749,7 @@ void ok_to_send() {
     }while(0)
 
   void inverse_kinematics(const float raw[XYZ]) {
-    DELTA_RAW_IK();
+    DELTA_IK(raw);
     // DELTA_DEBUG();
   }
 
@@ -13184,8 +13184,9 @@ void set_current_from_steppers_for_axis(const AxisEnum axis) {
     // SERIAL_ECHOPAIR(" seconds=", seconds);
     // SERIAL_ECHOLNPAIR(" segments=", segments);
 
-    #if IS_SCARA && ENABLED(SCARA_FEEDRATE_SCALING)
+    #if ENABLED(SCARA_FEEDRATE_SCALING)
       // SCARA needs to scale the feed rate from mm/s to degrees/s
+      // i.e., Complete the angular vector in the given time.
       const float inv_segment_length = min(10.0, float(segments) / cartesian_mm), // 1/mm/segs
                   inverse_secs = inv_segment_length * _feedrate_mm_s;
       float oldA = stepper.get_axis_position_degrees(A_AXIS),
@@ -13209,37 +13210,28 @@ void set_current_from_steppers_for_axis(const AxisEnum axis) {
 
       LOOP_XYZE(i) raw[i] += segment_distance[i];
       #if ENABLED(DELTA)
-        DELTA_RAW_IK(); // Delta can inline its kinematics
+        DELTA_IK(raw); // Delta can inline its kinematics
       #else
         inverse_kinematics(raw);
       #endif
 
       ADJUST_DELTA(raw); // Adjust Z if bed leveling is enabled
 
-      #if IS_SCARA && ENABLED(SCARA_FEEDRATE_SCALING)
+      #if ENABLED(SCARA_FEEDRATE_SCALING)
         // For SCARA scale the feed rate from mm/s to degrees/s
-        // Use ratio between the length of the move and the larger angle change
-        const float adiff = abs(delta[A_AXIS] - oldA),
-                    bdiff = abs(delta[B_AXIS] - oldB);
-        planner.buffer_line(delta[A_AXIS], delta[B_AXIS], delta[C_AXIS], raw[E_AXIS], max(adiff, bdiff) * inverse_secs, active_extruder);
-        oldA = delta[A_AXIS];
-        oldB = delta[B_AXIS];
+        // i.e., Complete the angular vector in the given time.
+        planner.buffer_segment(delta[A_AXIS], delta[B_AXIS], raw[Z_AXIS], raw[E_AXIS], HYPOT(delta[A_AXIS] - oldA, delta[B_AXIS] - oldB) * inverse_secs, active_extruder);
+        oldA = delta[A_AXIS]; oldB = delta[B_AXIS];
       #else
-        planner.buffer_line(delta[A_AXIS], delta[B_AXIS], delta[C_AXIS], raw[E_AXIS], _feedrate_mm_s, active_extruder);
+        planner.buffer_line(delta[A_AXIS], delta[B_AXIS], raw[Z_AXIS], raw[E_AXIS], _feedrate_mm_s, active_extruder);
       #endif
     }
 
-    // Since segment_distance is only approximate,
-    // the final move must be to the exact destination.
-
-    #if IS_SCARA && ENABLED(SCARA_FEEDRATE_SCALING)
-      // For SCARA scale the feed rate from mm/s to degrees/s
-      // With segments > 1 length is 1 segment, otherwise total length
+    // Ensure last segment arrives at target location.
+    #if ENABLED(SCARA_FEEDRATE_SCALING)
       inverse_kinematics(rtarget);
       ADJUST_DELTA(rtarget);
-      const float adiff = abs(delta[A_AXIS] - oldA),
-                  bdiff = abs(delta[B_AXIS] - oldB);
-      planner.buffer_line(delta[A_AXIS], delta[B_AXIS], delta[C_AXIS], raw[E_AXIS], max(adiff, bdiff) * inverse_secs, active_extruder);
+      planner.buffer_segment(delta[A_AXIS], delta[B_AXIS], rtarget[Z_AXIS], rtarget[E_AXIS], HYPOT(delta[A_AXIS] - oldA, delta[B_AXIS] - oldB) * inverse_secs, active_extruder);
     #else
       planner.buffer_line_kinematic(rtarget, _feedrate_mm_s, active_extruder);
     #endif
@@ -13509,7 +13501,7 @@ void prepare_move_to_destination() {
      * This is important when there are successive arc motions.
      */
     // Vector rotation matrix values
-    float arc_target[XYZE];
+    float raw[XYZE];
     const float theta_per_segment = angular_travel / segments,
                 linear_per_segment = linear_travel / segments,
                 extruder_per_segment = extruder_travel / segments,
@@ -13517,10 +13509,10 @@ void prepare_move_to_destination() {
                 cos_T = 1 - 0.5 * sq(theta_per_segment); // Small angle approximation
 
     // Initialize the linear axis
-    arc_target[l_axis] = current_position[l_axis];
+    raw[l_axis] = current_position[l_axis];
 
     // Initialize the extruder axis
-    arc_target[E_AXIS] = current_position[E_AXIS];
+    raw[E_AXIS] = current_position[E_AXIS];
 
     const float fr_mm_s = MMS_SCALED(feedrate_mm_s);
 
@@ -13528,6 +13520,14 @@ void prepare_move_to_destination() {
 
     #if N_ARC_CORRECTION > 1
       int8_t arc_recalc_count = N_ARC_CORRECTION;
+    #endif
+
+    #if ENABLED(SCARA_FEEDRATE_SCALING)
+      // SCARA needs to scale the feed rate from mm/s to degrees/s
+      const float inv_segment_length = 1.0 / (MM_PER_ARC_SEGMENT),
+                  inverse_secs = inv_segment_length * fr_mm_s;
+      float oldA = stepper.get_axis_position_degrees(A_AXIS),
+            oldB = stepper.get_axis_position_degrees(B_AXIS);
     #endif
 
     for (uint16_t i = 1; i < segments; i++) { // Iterate (segments-1) times
@@ -13561,19 +13561,34 @@ void prepare_move_to_destination() {
         r_Q = -offset[0] * sin_Ti - offset[1] * cos_Ti;
       }
 
-      // Update arc_target location
-      arc_target[p_axis] = center_P + r_P;
-      arc_target[q_axis] = center_Q + r_Q;
-      arc_target[l_axis] += linear_per_segment;
-      arc_target[E_AXIS] += extruder_per_segment;
+      // Update raw location
+      raw[p_axis] = center_P + r_P;
+      raw[q_axis] = center_Q + r_Q;
+      raw[l_axis] += linear_per_segment;
+      raw[E_AXIS] += extruder_per_segment;
 
-      clamp_to_software_endstops(arc_target);
+      clamp_to_software_endstops(raw);
 
-      planner.buffer_line_kinematic(arc_target, fr_mm_s, active_extruder);
+      #if ENABLED(SCARA_FEEDRATE_SCALING)
+        // For SCARA scale the feed rate from mm/s to degrees/s
+        // i.e., Complete the angular vector in the given time.
+        inverse_kinematics(raw);
+        ADJUST_DELTA(raw);
+        planner.buffer_segment(delta[A_AXIS], delta[B_AXIS], raw[Z_AXIS], raw[E_AXIS], HYPOT(delta[A_AXIS] - oldA, delta[B_AXIS] - oldB) * inverse_secs, active_extruder);
+        oldA = delta[A_AXIS]; oldB = delta[B_AXIS];
+      #else
+        planner.buffer_line_kinematic(raw, fr_mm_s, active_extruder);
+      #endif
     }
 
     // Ensure last segment arrives at target location.
-    planner.buffer_line_kinematic(cart, fr_mm_s, active_extruder);
+    #if ENABLED(SCARA_FEEDRATE_SCALING)
+      inverse_kinematics(cart);
+      ADJUST_DELTA(cart);
+      planner.buffer_segment(delta[A_AXIS], delta[B_AXIS], cart[Z_AXIS], cart[E_AXIS], HYPOT(delta[A_AXIS] - oldA, delta[B_AXIS] - oldB) * inverse_secs, active_extruder);
+    #else
+      planner.buffer_line_kinematic(cart, fr_mm_s, active_extruder);
+    #endif
 
     // As far as the parser is concerned, the position is now == target. In reality the
     // motion control system might still be processing the action and the real tool position
