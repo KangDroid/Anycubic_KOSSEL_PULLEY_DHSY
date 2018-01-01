@@ -36,13 +36,13 @@
  *
  */
 
-#define EEPROM_VERSION "V47"
+#define EEPROM_VERSION "V48"
 
 // Change EEPROM version if these are changed:
 #define EEPROM_OFFSET 100
 
 /**
- * V47 EEPROM Layout:
+ * V48 EEPROM Layout:
  *
  *  100  Version                                    (char x4)
  *  104  EEPROM CRC16                               (uint16_t)
@@ -139,9 +139,9 @@
  *
  * Volumetric Extrusion:                            21 bytes
  *  539  M200 D    parser.volumetric_enabled        (bool)
- *  540  M200 T D  planner.filament_size            (float x5) (T0..3)
+ *  540  M200 T D  planner.filament_size            (float x5) (T0..4)
  *
- * HAVE_TMC2130 || HAVE_TMC2208:                    22 bytes
+ * HAS_TRINAMIC:                                    22 bytes
  *  560  M906 X    Stepper X current                (uint16_t)
  *  562  M906 Y    Stepper Y current                (uint16_t)
  *  564  M906 Z    Stepper Z current                (uint16_t)
@@ -154,7 +154,7 @@
  *  578  M906 E3   Stepper E3 current               (uint16_t)
  *  580  M906 E4   Stepper E4 current               (uint16_t)
  *
- * SENSORLESS HOMING                                4 bytes
+ * SENSORLESS_HOMING:                               4 bytes
  *  582  M914 X    Stepper X and X2 threshold       (int16_t)
  *  584  M914 Y    Stepper Y and Y2 threshold       (int16_t)
  *
@@ -167,7 +167,7 @@
  *  598  M907 Z    Stepper Z current                (uint32_t)
  *  602  M907 E    Stepper E current                (uint32_t)
  *
- * CNC_COORDINATE_SYSTEMS                           108 bytes
+ * CNC_COORDINATE_SYSTEMS:                          108 bytes
  *  606  G54-G59.3 coordinate_system                (float x 27)
  *
  * SKEW_CORRECTION:                                 12 bytes
@@ -175,8 +175,12 @@
  *  718  M852 J    planner.xz_skew_factor           (float)
  *  722  M852 K    planner.yz_skew_factor           (float)
  *
- *  726                                   Minimum end-point
- * 2255 (726 + 208 + 36 + 9 + 288 + 988)  Maximum end-point
+ * ADVANCED_PAUSE_FEATURE:                          40 bytes
+ *  726  M603 T U  filament_change_unload_length    (float x 5) (T0..4)
+ *  746  M603 T L  filament_change_load_length      (float x 5) (T0..4)
+ *
+ *  766                                   Minimum end-point
+ * 2295 (766 + 208 + 36 + 9 + 288 + 988)  Maximum end-point
  *
  * ========================================================================
  * meshes_begin (between max and min end-point, directly above)
@@ -203,7 +207,7 @@ MarlinSettings settings;
   #include "mesh_bed_leveling.h"
 #endif
 
-#if ENABLED(HAVE_TMC2130) || ENABLED(HAVE_TMC2208)
+#if HAS_TRINAMIC
   #include "stepper_indirection.h"
 #endif
 
@@ -240,6 +244,9 @@ void MarlinSettings::postprocess() {
 
   #if DISABLED(NO_VOLUMETRICS)
     planner.calculate_volumetric_multipliers();
+  #else
+    for (uint8_t i = COUNT(planner.e_factor); i--;)
+      planner.refresh_e_factor(i);
   #endif
 
   #if HAS_HOME_OFFSET || ENABLED(DUAL_X_CARRIAGE)
@@ -283,7 +290,7 @@ void MarlinSettings::postprocess() {
   bool MarlinSettings::eeprom_error;
 
   #if ENABLED(AUTO_BED_LEVELING_UBL)
-    int MarlinSettings::meshes_begin;
+    int16_t MarlinSettings::meshes_begin;
   #endif
 
   void MarlinSettings::write_data(int &pos, const uint8_t *value, uint16_t size, uint16_t *crc) {
@@ -383,9 +390,8 @@ void MarlinSettings::postprocess() {
         sizeof(mbl.z_values) == GRID_MAX_POINTS * sizeof(mbl.z_values[0][0]),
         "MBL Z array is the wrong size."
       );
-      const bool leveling_is_on = mbl.has_mesh;
       const uint8_t mesh_num_x = GRID_MAX_POINTS_X, mesh_num_y = GRID_MAX_POINTS_Y;
-      EEPROM_WRITE(leveling_is_on);
+      EEPROM_WRITE(mbl.has_mesh);
       EEPROM_WRITE(mbl.z_offset);
       EEPROM_WRITE(mesh_num_x);
       EEPROM_WRITE(mesh_num_y);
@@ -581,7 +587,7 @@ void MarlinSettings::postprocess() {
         EEPROM_WRITE(dummy);
       }
 
-    #endif // !NO_VOLUMETRICS
+    #endif
 
     // Save TMC2130 or TMC2208 Configuration, and placeholder values
     uint16_t val;
@@ -721,6 +727,23 @@ void MarlinSettings::postprocess() {
     #else
       dummy = 0.0f;
       for (uint8_t q = 3; q--;) EEPROM_WRITE(dummy);
+    #endif
+
+    //
+    // Advanced Pause filament load & unload lengths
+    //
+    #if ENABLED(ADVANCED_PAUSE_FEATURE)
+      for (uint8_t q = 0; q < MAX_EXTRUDERS; q++) {
+        if (q < COUNT(filament_change_unload_length)) dummy = filament_change_unload_length[q];
+        EEPROM_WRITE(dummy);
+      }
+      for (uint8_t q = 0; q < MAX_EXTRUDERS; q++) {
+        if (q < COUNT(filament_change_load_length)) dummy = filament_change_load_length[q];
+        EEPROM_WRITE(dummy);
+      }
+    #else
+      dummy = 0.0f;
+      for (uint8_t q = MAX_EXTRUDERS * 2; q--;) EEPROM_WRITE(dummy);
     #endif
 
     if (!eeprom_error) {
@@ -1205,6 +1228,23 @@ void MarlinSettings::postprocess() {
         for (uint8_t q = 3; q--;) EEPROM_READ(dummy);
       #endif
 
+      //
+      // Advanced Pause filament load & unload lengths
+      //
+
+      #if ENABLED(ADVANCED_PAUSE_FEATURE)
+        for (uint8_t q = 0; q < MAX_EXTRUDERS; q++) {
+          EEPROM_READ(dummy);
+          if (q < COUNT(filament_change_unload_length)) filament_change_unload_length[q] = dummy;
+        }
+        for (uint8_t q = 0; q < MAX_EXTRUDERS; q++) {
+          EEPROM_READ(dummy);
+          if (q < COUNT(filament_change_load_length)) filament_change_load_length[q] = dummy;
+        }
+      #else
+        for (uint8_t q = MAX_EXTRUDERS * 2; q--;) EEPROM_READ(dummy);
+      #endif
+
       if (working_crc == stored_crc) {
         postprocess();
         #if ENABLED(EEPROM_CHITCHAT)
@@ -1282,7 +1322,7 @@ void MarlinSettings::postprocess() {
       }
     #endif
 
-    int MarlinSettings::calc_num_meshes() {
+    uint16_t MarlinSettings::calc_num_meshes() {
       //obviously this will get more sophisticated once we've added an actual MAT
 
       if (meshes_begin <= 0) return 0;
@@ -1290,10 +1330,10 @@ void MarlinSettings::postprocess() {
       return (meshes_end - meshes_begin) / sizeof(ubl.z_values);
     }
 
-    void MarlinSettings::store_mesh(int8_t slot) {
+    void MarlinSettings::store_mesh(const int8_t slot) {
 
       #if ENABLED(AUTO_BED_LEVELING_UBL)
-        const int a = calc_num_meshes();
+        const uint16_t a = calc_num_meshes();
         if (!WITHIN(slot, 0, a - 1)) {
           #if ENABLED(EEPROM_CHITCHAT)
             ubl_invalid_slot(a);
@@ -1323,11 +1363,11 @@ void MarlinSettings::postprocess() {
       #endif
     }
 
-    void MarlinSettings::load_mesh(int8_t slot, void *into /* = 0 */) {
+    void MarlinSettings::load_mesh(const int8_t slot, void * const into/*=NULL*/) {
 
       #if ENABLED(AUTO_BED_LEVELING_UBL)
 
-        const int16_t a = settings.calc_num_meshes();
+        const uint16_t a = settings.calc_num_meshes();
 
         if (!WITHIN(slot, 0, a - 1)) {
           #if ENABLED(EEPROM_CHITCHAT)
@@ -1385,16 +1425,12 @@ void MarlinSettings::reset() {
   planner.retract_acceleration = DEFAULT_RETRACT_ACCELERATION;
   planner.travel_acceleration = DEFAULT_TRAVEL_ACCELERATION;
   planner.min_feedrate_mm_s = DEFAULT_MINIMUMFEEDRATE;
-  planner.min_segment_time_us = DEFAULT_MINSEGMENTTIME;
   planner.min_travel_feedrate_mm_s = DEFAULT_MINTRAVELFEEDRATE;
+  planner.min_segment_time_us = DEFAULT_MINSEGMENTTIME;
   planner.max_jerk[X_AXIS] = DEFAULT_XJERK;
   planner.max_jerk[Y_AXIS] = DEFAULT_YJERK;
   planner.max_jerk[Z_AXIS] = DEFAULT_ZJERK;
   planner.max_jerk[E_AXIS] = DEFAULT_EJERK;
-
-  #if ENABLED(ENABLE_LEVELING_FADE_HEIGHT)
-    new_z_fade_height = 10.0;
-  #endif
 
   #if HAS_HOME_OFFSET
     ZERO(home_offset);
@@ -1417,7 +1453,14 @@ void MarlinSettings::reset() {
     LOOP_XYZ(i) HOTEND_LOOP() hotend_offset[i][e] = tmp4[i][e];
   #endif
 
-  // Applies to all MBL and ABL
+  //
+  // Global Leveling
+  //
+
+  #if ENABLED(ENABLE_LEVELING_FADE_HEIGHT)
+    new_z_fade_height = 0.0;
+  #endif
+
   #if HAS_LEVELING
     reset_bed_level();
   #endif
@@ -1478,10 +1521,6 @@ void MarlinSettings::reset() {
     lcd_preheat_fan_speed[1] = PREHEAT_2_FAN_SPEED;
   #endif
 
-  #if HAS_LCD_CONTRAST
-    lcd_contrast = DEFAULT_LCD_CONTRAST;
-  #endif
-
   #if ENABLED(PIDTEMP)
     #if ENABLED(PID_PARAMS_PER_HOTEND) && HOTENDS > 1
       HOTEND_LOOP()
@@ -1503,6 +1542,10 @@ void MarlinSettings::reset() {
     thermalManager.bedKp = DEFAULT_bedKp;
     thermalManager.bedKi = scalePID_i(DEFAULT_bedKi);
     thermalManager.bedKd = scalePID_d(DEFAULT_bedKd);
+  #endif
+
+  #if HAS_LCD_CONTRAST
+    lcd_contrast = DEFAULT_LCD_CONTRAST;
   #endif
 
   #if ENABLED(FWRETRACT)
@@ -1599,16 +1642,19 @@ void MarlinSettings::reset() {
       stepper.digipot_current(q, (stepper.motor_current_setting[q] = tmp_motor_current_setting[q]));
   #endif
 
-  #if ENABLED(AUTO_BED_LEVELING_UBL)
-    ubl.reset();
-  #endif
-
   #if ENABLED(SKEW_CORRECTION_GCODE)
     planner.xy_skew_factor = XY_SKEW_FACTOR;
     #if ENABLED(SKEW_CORRECTION_FOR_Z)
       planner.xz_skew_factor = XZ_SKEW_FACTOR;
       planner.yz_skew_factor = YZ_SKEW_FACTOR;
     #endif
+  #endif
+
+  #if ENABLED(ADVANCED_PAUSE_FEATURE)
+    for (uint8_t e = 0; e < E_STEPPERS; e++) {
+      filament_change_unload_length[e] = FILAMENT_CHANGE_UNLOAD_LENGTH;
+      filament_change_load_length[e] = FILAMENT_CHANGE_LOAD_LENGTH;
+    }
   #endif
 
   postprocess();
@@ -1710,7 +1756,7 @@ void MarlinSettings::reset() {
         SERIAL_ECHOLNPGM("  M200 D0");
       }
 
-    #endif
+    #endif // !NO_VOLUMETRICS
 
     if (!forReplay) {
       CONFIG_ECHO_START;
@@ -2062,7 +2108,7 @@ void MarlinSettings::reset() {
     /**
      * TMC2130 stepper driver current
      */
-    #if ENABLED(HAVE_TMC2130)
+    #if HAS_TRINAMIC
       if (!forReplay) {
         CONFIG_ECHO_START;
         SERIAL_ECHOLNPGM("Stepper driver current:");
@@ -2108,7 +2154,7 @@ void MarlinSettings::reset() {
     /**
      * TMC2130 Sensorless homing thresholds
      */
-    #if ENABLED(HAVE_TMC2130) && ENABLED(SENSORLESS_HOMING)
+    #if ENABLED(SENSORLESS_HOMING)
       if (!forReplay) {
         CONFIG_ECHO_START;
         SERIAL_ECHOLNPGM("Sensorless homing threshold:");
@@ -2154,6 +2200,42 @@ void MarlinSettings::reset() {
       SERIAL_ECHOPAIR(" E", stepper.motor_current_setting[2]);
       SERIAL_EOL();
     #endif
+
+    /**
+     * Advanced Pause filament load & unload lengths
+     */
+    #if ENABLED(ADVANCED_PAUSE_FEATURE)
+      if (!forReplay) {
+        CONFIG_ECHO_START;
+        SERIAL_ECHOLNPGM("Filament load & unload lengths:");
+      }
+      CONFIG_ECHO_START;
+      #if EXTRUDERS == 1
+        SERIAL_ECHOPAIR("  M603 U", LINEAR_UNIT(filament_change_unload_length[0]));
+        SERIAL_ECHOLNPAIR(" L", LINEAR_UNIT(filament_change_load_length[0]));
+      #else
+        SERIAL_ECHOPAIR("  M603 T0 U", LINEAR_UNIT(filament_change_unload_length[0]));
+        SERIAL_ECHOLNPAIR(" L", LINEAR_UNIT(filament_change_load_length[0]));
+        CONFIG_ECHO_START;
+        SERIAL_ECHOPAIR("  M603 T1 U", LINEAR_UNIT(filament_change_unload_length[1]));
+        SERIAL_ECHOLNPAIR(" L", LINEAR_UNIT(filament_change_load_length[1]));
+        #if EXTRUDERS > 2
+          CONFIG_ECHO_START;
+          SERIAL_ECHOPAIR("  M603 T2 U", LINEAR_UNIT(filament_change_unload_length[2]));
+          SERIAL_ECHOLNPAIR(" L", LINEAR_UNIT(filament_change_load_length[2]));
+          #if EXTRUDERS > 3
+            CONFIG_ECHO_START;
+            SERIAL_ECHOPAIR("  M603 T3 U", LINEAR_UNIT(filament_change_unload_length[3]));
+            SERIAL_ECHOLNPAIR(" L", LINEAR_UNIT(filament_change_load_length[3]));
+            #if EXTRUDERS > 4
+              CONFIG_ECHO_START;
+              SERIAL_ECHOPAIR("  M603 T4 U", LINEAR_UNIT(filament_change_unload_length[4]));
+              SERIAL_ECHOLNPAIR(" L", LINEAR_UNIT(filament_change_load_length[4]));
+            #endif // EXTRUDERS > 4
+          #endif // EXTRUDERS > 3
+        #endif // EXTRUDERS > 2
+      #endif // EXTRUDERS == 1
+    #endif // ADVANCED_PAUSE_FEATURE
   }
 
 #endif // !DISABLE_M503
