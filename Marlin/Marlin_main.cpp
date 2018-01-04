@@ -850,7 +850,7 @@ static bool drain_injected_commands_P() {
  */
 void enqueue_and_echo_commands_P(const char * const pgcode) {
   injected_commands_P = pgcode;
-  drain_injected_commands_P(); // first command executed asap (when possible)
+  (void)drain_injected_commands_P(); // first command executed asap (when possible)
 }
 
 /**
@@ -895,6 +895,18 @@ bool enqueue_and_echo_command(const char* cmd, bool say_ok/*=false*/) {
   }
   return false;
 }
+
+#if HAS_QUEUE_NOW
+  void enqueue_and_echo_command_now(const char* cmd, bool say_ok/*=false*/) {
+    while (!enqueue_and_echo_command(cmd, say_ok)) idle();
+  }
+  #if HAS_LCD_QUEUE_NOW
+    void enqueue_and_echo_commands_P_now(const char * const pgcode) {
+      enqueue_and_echo_commands_P(pgcode);
+      while (drain_injected_commands_P()) idle();
+    }
+  #endif
+#endif
 
 void setup_killpin() {
   #if HAS_KILL
@@ -6737,7 +6749,7 @@ inline void gcode_M17() {
         HOTEND_LOOP()
           thermalManager.start_heater_idle_timer(e, nozzle_timeout);
 
-        wait_for_user = true; /* Wait for user to load filament */
+        wait_for_user = true; // Wait for user to load filament
         nozzle_timed_out = false;
 
         #if HAS_BUZZER
@@ -6771,13 +6783,25 @@ inline void gcode_M17() {
       lcd_advanced_pause_show_message(ADVANCED_PAUSE_MESSAGE_RESUME);
     #endif
 
-    // Set extruder to saved position
-    destination[E_AXIS] = current_position[E_AXIS] = resume_position[E_AXIS];
-    planner.set_e_position_mm(current_position[E_AXIS]);
+    // Intelligent resuming
+    #if ENABLED(FWRETRACT)
+      // If retracted before goto pause
+      if (retracted[active_extruder])
+        do_pause_e_move(-retract_length, retract_feedrate_mm_s);
+    #else
+      // If resume_position negative
+      if (resume_position[E_AXIS] < 0) do_pause_e_move(resume_position[E_AXIS], PAUSE_PARK_RETRACT_FEEDRATE);
+    #endif
 
     // Move XY to starting position, then Z
     do_blocking_move_to_xy(resume_position[X_AXIS], resume_position[Y_AXIS], NOZZLE_PARK_XY_FEEDRATE);
+
+    // Set Z_AXIS to saved position
     do_blocking_move_to_z(resume_position[Z_AXIS], NOZZLE_PARK_Z_FEEDRATE);
+
+    // Now all extrusion positions are resumed and ready to be confirmed
+    // Set extruder to saved position
+    planner.set_e_position_mm((destination[E_AXIS] = current_position[E_AXIS] = resume_position[E_AXIS]));
 
     #if ENABLED(FILAMENT_RUNOUT_SENSOR)
       filament_ran_out = false;
@@ -9444,7 +9468,7 @@ inline void gcode_M226() {
 /**
  * M303: PID relay autotune
  *
- *       S<temperature> sets the target temperature. (default 150C)
+ *       S<temperature> sets the target temperature. (default 150C / 70C)
  *       E<extruder> (-1 for the bed) (default 0)
  *       C<cycles>
  *       U<bool> with a non-zero value will apply the result to current settings
