@@ -241,6 +241,8 @@
   #error "ANET_KEYPAD_LCD is now ZONESTAR_LCD. Please update your configuration."
 #elif defined(MEASURED_LOWER_LIMIT) || defined(MEASURED_UPPER_LIMIT)
   #error "MEASURED_(UPPER|LOWER)_LIMIT is now FILWIDTH_ERROR_MARGIN. Please update your configuration."
+#elif defined(AUTOMATIC_CURRENT_CONTROL)
+  #error "AUTOMATIC_CURRENT_CONTROL is now MONITOR_DRIVER_STATUS. Please update your configuration."
 #endif
 
 /**
@@ -274,9 +276,15 @@
     #error "RX_BUFFER_SIZE must be a power of 2 greater than 1."
   #elif TX_BUFFER_SIZE && (TX_BUFFER_SIZE < 2 || TX_BUFFER_SIZE > 256 || !IS_POWER_OF_2(TX_BUFFER_SIZE))
     #error "TX_BUFFER_SIZE must be 0, a power of 2 greater than 1, and no greater than 256."
+  #elif ENABLED(BLUETOOTH)
+    #error "BLUETOOTH is only supported with AT90USB."
   #endif
-#elif ENABLED(SERIAL_XON_XOFF)
-  #error "SERIAL_XON_XOFF is not supported on USB-native AVR devices."
+#elif ENABLED(SERIAL_XON_XOFF) || ENABLED(SERIAL_STATS_MAX_RX_QUEUED) || ENABLED(SERIAL_STATS_DROPPED_RX)
+  #error "SERIAL_XON_XOFF and SERIAL_STATS_* features not supported on USB-native AVR devices."
+#endif
+
+#if SERIAL_PORT > 7
+  #error "Set SERIAL_PORT to the port on your board. Usually this is 0."
 #endif
 
 /**
@@ -321,8 +329,8 @@ static_assert(X_MAX_LENGTH >= X_BED_SIZE && Y_MAX_LENGTH >= Y_BED_SIZE,
  * Progress Bar
  */
 #if ENABLED(LCD_PROGRESS_BAR)
-  #if DISABLED(SDSUPPORT)
-    #error "LCD_PROGRESS_BAR requires SDSUPPORT."
+  #if DISABLED(SDSUPPORT) && DISABLED(LCD_SET_PROGRESS_MANUALLY)
+    #error "LCD_PROGRESS_BAR requires SDSUPPORT or LCD_SET_PROGRESS_MANUALLY."
   #elif DISABLED(ULTRA_LCD)
     #error "LCD_PROGRESS_BAR requires a character LCD."
   #elif ENABLED(DOGLCD)
@@ -365,8 +373,8 @@ static_assert(X_MAX_LENGTH >= X_BED_SIZE && Y_MAX_LENGTH >= Y_BED_SIZE,
  * I2C Position Encoders
  */
 #if ENABLED(I2C_POSITION_ENCODERS)
-  #if DISABLED(BABYSTEPPING)
-    #error "I2C_POSITION_ENCODERS requires BABYSTEPPING."
+  #if DISABLED(BABYSTEPPING) || DISABLED(BABYSTEP_XY)
+    #error "I2C_POSITION_ENCODERS requires BABYSTEPPING and BABYSTEP_XY."
   #elif !WITHIN(I2CPE_ENCODER_CNT, 1, 5)
     #error "I2CPE_ENCODER_CNT must be between 1 and 5."
   #endif
@@ -392,11 +400,21 @@ static_assert(X_MAX_LENGTH >= X_BED_SIZE && Y_MAX_LENGTH >= Y_BED_SIZE,
 #endif
 
 /**
- * Filament Runout needs a pin and either SD Support or Auto print start detection
+ * Filament Runout needs one or more pins and either SD Support or Auto print start detection
  */
 #if ENABLED(FILAMENT_RUNOUT_SENSOR)
-  #if !HAS_FIL_RUNOUT
+  #if !PIN_EXISTS(FIL_RUNOUT)
     #error "FILAMENT_RUNOUT_SENSOR requires FIL_RUNOUT_PIN."
+  #elif NUM_RUNOUT_SENSORS > E_STEPPERS
+    #error "NUM_RUNOUT_SENSORS cannot exceed the number of E steppers."
+  #elif NUM_RUNOUT_SENSORS > 1 && !PIN_EXISTS(FIL_RUNOUT2)
+    #error "FILAMENT_RUNOUT_SENSOR with NUM_RUNOUT_SENSORS > 1 requires FIL_RUNOUT2_PIN."
+  #elif NUM_RUNOUT_SENSORS > 2 && !PIN_EXISTS(FIL_RUNOUT3)
+    #error "FILAMENT_RUNOUT_SENSOR with NUM_RUNOUT_SENSORS > 2 requires FIL_RUNOUT3_PIN."
+  #elif NUM_RUNOUT_SENSORS > 3 && !PIN_EXISTS(FIL_RUNOUT4)
+    #error "FILAMENT_RUNOUT_SENSOR with NUM_RUNOUT_SENSORS > 3 requires FIL_RUNOUT4_PIN."
+  #elif NUM_RUNOUT_SENSORS > 4 && !PIN_EXISTS(FIL_RUNOUT5)
+    #error "FILAMENT_RUNOUT_SENSOR with NUM_RUNOUT_SENSORS > 4 requires FIL_RUNOUT5_PIN."
   #elif DISABLED(SDSUPPORT) && DISABLED(PRINTJOB_TIMER_AUTOSTART)
     #error "FILAMENT_RUNOUT_SENSOR requires SDSUPPORT or PRINTJOB_TIMER_AUTOSTART."
   #elif DISABLED(ADVANCED_PAUSE_FEATURE)
@@ -615,9 +633,7 @@ static_assert(1 >= 0
  * Delta requirements
  */
 #if ENABLED(DELTA)
-  #if HAS_BED_PROBE && ENABLED(Z_MIN_PROBE_ENDSTOP)
-    #error "Delta probably shouldn't use Z_MIN_PROBE_ENDSTOP. Comment out this line to continue."
-  #elif DISABLED(USE_XMAX_PLUG) && DISABLED(USE_YMAX_PLUG) && DISABLED(USE_ZMAX_PLUG)
+  #if DISABLED(USE_XMAX_PLUG) && DISABLED(USE_YMAX_PLUG) && DISABLED(USE_ZMAX_PLUG)
     #error "You probably want to use Max Endstops for DELTA!"
   #elif ENABLED(ENABLE_LEVELING_FADE_HEIGHT) && DISABLED(AUTO_BED_LEVELING_BILINEAR) && !UBL_SEGMENTED
     #error "ENABLE_LEVELING_FADE_HEIGHT on DELTA requires AUTO_BED_LEVELING_BILINEAR or AUTO_BED_LEVELING_UBL."
@@ -882,10 +898,18 @@ static_assert(1 >= 0
 #endif
 
 /**
- * Homing Bump
+ * Homing
  */
 #if X_HOME_BUMP_MM < 0 || Y_HOME_BUMP_MM < 0 || Z_HOME_BUMP_MM < 0
   #error "[XYZ]_HOME_BUMP_MM must be greater than or equal to 0."
+#endif
+
+#if ENABLED(CODEPENDENT_XY_HOMING)
+  #if ENABLED(QUICK_HOME)
+    #error "QUICK_HOME is incompatible with CODEPENDENT_XY_HOMING."
+  #elif IS_KINEMATIC
+    #error "CODEPENDENT_XY_HOMING requires a Cartesian setup."
+  #endif
 #endif
 
 /**
@@ -912,7 +936,7 @@ static_assert(1 >= 0
  */
 #if ENABLED(DISABLE_X) || ENABLED(DISABLE_Y) || ENABLED(DISABLE_Z)
   #if ENABLED(HOME_AFTER_DEACTIVATE) || ENABLED(Z_SAFE_HOMING)
-    #error "DISABLE_[XYZ] not compatible with HOME_AFTER_DEACTIVATE or Z_SAFE_HOMING."
+    #error "DISABLE_[XYZ] is not compatible with HOME_AFTER_DEACTIVATE or Z_SAFE_HOMING."
   #endif
 #endif // DISABLE_[XYZ]
 
@@ -1419,6 +1443,9 @@ static_assert(1 >= 0
   #if ENABLED(ZONESTAR_LCD)
     + 1
   #endif
+  #if ENABLED(ULTI_CONTROLLER)
+    + 1
+  #endif
   , "Please select no more than one LCD controller option."
 );
 
@@ -1459,15 +1486,49 @@ static_assert(1 >= 0
     #error "HAVE_TMC2130 requires at least one TMC2130 stepper to be set."
   #elif ENABLED(HYBRID_THRESHOLD) && DISABLED(STEALTHCHOP)
     #error "Enable STEALTHCHOP to use HYBRID_THRESHOLD."
-  #elif defined(AUTOMATIC_CURRENT_CONTROL)
-    #error "AUTOMATIC_CURRENT_CONTROL is now MONITOR_DRIVER_STATUS. Please update your configuration."
   #endif
+
+  #if ENABLED(X_IS_TMC2130) && !PIN_EXISTS(X_CS)
+    #error "X_CS_PIN is required for X_IS_TMC2130. Define X_CS_PIN in Configuration_adv.h."
+  #elif ENABLED(X2_IS_TMC2130) && !PIN_EXISTS(X2_CS)
+    #error "X2_CS_PIN is required for X2_IS_TMC2130. Define X2_CS_PIN in Configuration_adv.h."
+  #elif ENABLED(Y_IS_TMC2130) && !PIN_EXISTS(Y_CS)
+    #error "Y_CS_PIN is required for Y_IS_TMC2130. Define Y_CS_PIN in Configuration_adv.h."
+  #elif ENABLED(Y2_IS_TMC2130) && !PIN_EXISTS(Y2_CS)
+    #error "Y2_CS_PIN is required for Y2_IS_TMC2130. Define Y2_CS_PIN in Configuration_adv.h."
+  #elif ENABLED(Z_IS_TMC2130) && !PIN_EXISTS(Z_CS)
+    #error "Z_CS_PIN is required for Z_IS_TMC2130. Define Z_CS_PIN in Configuration_adv.h."
+  #elif ENABLED(Z2_IS_TMC2130) && !PIN_EXISTS(Z2_CS)
+    #error "Z2_CS_PIN is required for Z2_IS_TMC2130. Define Z2_CS_PIN in Configuration_adv.h."
+  #elif ENABLED(E0_IS_TMC2130) && !PIN_EXISTS(E0_CS)
+    #error "E0_CS_PIN is required for E0_IS_TMC2130. Define E0_CS_PIN in Configuration_adv.h."
+  #elif ENABLED(E1_IS_TMC2130) && !PIN_EXISTS(E1_CS)
+    #error "E1_CS_PIN is required for E1_IS_TMC2130. Define E1_CS_PIN in Configuration_adv.h."
+  #elif ENABLED(E2_IS_TMC2130) && !PIN_EXISTS(E2_CS)
+    #error "E2_CS_PIN is required for E2_IS_TMC2130. Define E2_CS_PIN in Configuration_adv.h."
+  #elif ENABLED(E3_IS_TMC2130) && !PIN_EXISTS(E3_CS)
+    #error "E3_CS_PIN is required for E3_IS_TMC2130. Define E3_CS_PIN in Configuration_adv.h."
+  #elif ENABLED(E4_IS_TMC2130) && !PIN_EXISTS(E4_CS)
+    #error "E4_CS_PIN is required for E4_IS_TMC2130. Define E4_CS_PIN in Configuration_adv.h."
+  #endif
+
+  // Require STEALTHCHOP for SENSORLESS_HOMING on DELTA as the transition from spreadCycle to stealthChop
+  // is necessary in order to reset the stallGuard indication between the initial movement of all three
+  // towers to +Z and the individual homing of each tower. This restriction can be removed once a means of
+  // clearing the stallGuard activated status is found.
+  #if ENABLED(SENSORLESS_HOMING) && ENABLED(DELTA) && !ENABLED(STEALTHCHOP)
+    #error "SENSORLESS_HOMING on DELTA currently requires STEALTHCHOP."
+  #endif
+
+#elif ENABLED(SENSORLESS_HOMING)
+
+  #error "SENSORLESS_HOMING requires TMC2130 stepper drivers."
+
 #endif
 
 /**
  * Make sure HAVE_TMC2208 is warranted
  */
-
 #if ENABLED(HAVE_TMC2208) && !( \
        ENABLED(  X_IS_TMC2208 ) \
     || ENABLED( X2_IS_TMC2208 ) \
@@ -1482,8 +1543,30 @@ static_assert(1 >= 0
   #error "HAVE_TMC2208 requires at least one TMC2208 stepper to be set."
 #endif
 
+/**
+ * TMC2208 software UART and ENDSTOP_INTERRUPTS both use pin change interrupts (PCI)
+ */
+#if ENABLED(HAVE_TMC2208) && ENABLED(ENDSTOP_INTERRUPTS_FEATURE) && !( \
+       defined(X_HARDWARE_SERIAL ) \
+    || defined(X2_HARDWARE_SERIAL) \
+    || defined(Y_HARDWARE_SERIAL ) \
+    || defined(Y2_HARDWARE_SERIAL) \
+    || defined(Z_HARDWARE_SERIAL ) \
+    || defined(Z2_HARDWARE_SERIAL) \
+    || defined(E0_HARDWARE_SERIAL) \
+    || defined(E1_HARDWARE_SERIAL) \
+    || defined(E2_HARDWARE_SERIAL) \
+    || defined(E3_HARDWARE_SERIAL) \
+    || defined(E4_HARDWARE_SERIAL) )
+  #error "select hardware UART for TMC2208 to use both TMC2208 and ENDSTOP_INTERRUPTS_FEATURE."
+#endif
+
 #if ENABLED(HYBRID_THRESHOLD) && DISABLED(STEALTHCHOP)
   #error "Enable STEALTHCHOP to use HYBRID_THRESHOLD."
+#endif
+
+#if ENABLED(TMC_Z_CALIBRATION) && !Z_IS_TRINAMIC && !Z2_IS_TRINAMIC
+  #error "TMC_Z_CALIBRATION requires at least one TMC driver on Z axis"
 #endif
 
 /**
@@ -1599,6 +1682,10 @@ static_assert(COUNT(sanity_arr_3) <= XYZE_N, "DEFAULT_MAX_ACCELERATION has too m
 
 #if ENABLED(LED_CONTROL_MENU) && DISABLED(ULTIPANEL)
   #error "LED_CONTROL_MENU requires an LCD controller."
+#endif
+
+#if ENABLED(CASE_LIGHT_USE_NEOPIXEL) && DISABLED(NEOPIXEL_LED)
+  #error "CASE_LIGHT_USE_NEOPIXEL requires NEOPIXEL_LED."
 #endif
 
 #if ENABLED(SKEW_CORRECTION)
