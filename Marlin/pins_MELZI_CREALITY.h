@@ -31,9 +31,8 @@
  */
 
 #define BOARD_NAME "Melzi (Creality)"
-#define IS_MELZI
 
-#include "pins_SANGUINOLOLU_12.h"
+#include "pins_MELZI.h"
 
 // For the stock CR-10 use the REPRAP_DISCOUNT_FULL_GRAPHIC_SMART_CONTROLLER
 //   option for the display in Configuration.h
@@ -55,9 +54,15 @@
 #define FIL_RUNOUT_PIN     -1 // Uses Beeper/LED Pin Pulled to GND
 
 // Alter timing for graphical display
-#define ST7920_DELAY_1 DELAY_2_NOP
-#define ST7920_DELAY_2 DELAY_2_NOP
-#define ST7920_DELAY_3 DELAY_2_NOP
+#ifndef ST7920_DELAY_1
+  #define ST7920_DELAY_1 DELAY_2_NOP
+#endif
+#ifndef ST7920_DELAY_2
+  #define ST7920_DELAY_2 DELAY_2_NOP
+#endif
+#ifndef ST7920_DELAY_3
+  #define ST7920_DELAY_3 DELAY_2_NOP
+#endif
 
 #if ENABLED(MINIPANEL)
   #undef DOGLCD_CS

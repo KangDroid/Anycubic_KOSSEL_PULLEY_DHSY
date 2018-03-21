@@ -52,7 +52,8 @@ float FWRetract::retract_length,                     // M207 S - G10 Retract len
       FWRetract::retract_recover_feedrate_mm_s,      // M208 F - G11 Recover feedrate
       FWRetract::swap_retract_length,                // M207 W - G10 Swap Retract length
       FWRetract::swap_retract_recover_length,        // M208 W - G11 Swap Recover length
-      FWRetract::swap_retract_recover_feedrate_mm_s; // M208 R - G11 Swap Recover feedrate
+      FWRetract::swap_retract_recover_feedrate_mm_s, // M208 R - G11 Swap Recover feedrate
+      FWRetract::hop_amount;
 
 void FWRetract::reset() {
   autoretract_enabled = false;
@@ -64,6 +65,7 @@ void FWRetract::reset() {
   swap_retract_length = RETRACT_LENGTH_SWAP;
   swap_retract_recover_length = RETRACT_RECOVER_LENGTH_SWAP;
   swap_retract_recover_feedrate_mm_s = RETRACT_RECOVER_FEEDRATE_SWAP;
+  hop_amount = 0.0;
 
   for (uint8_t i = 0; i < EXTRUDERS; ++i) {
     retracted[i] = false;
@@ -152,10 +154,10 @@ void FWRetract::retract(const bool retracting
   else {
     // If a hop was done and Z hasn't changed, undo the Z hop
     if (hop_amount) {
-      current_position[Z_AXIS] += retract_zlift;          // Pretend current pos is lower. Next move raises Z.
+      current_position[Z_AXIS] += retract_zlift;          // Pretend current pos is higher. Next move lowers Z.
       SYNC_PLAN_POSITION_KINEMATIC();                     // Set the planner to the new position
       feedrate_mm_s = planner.max_feedrate_mm_s[Z_AXIS];  // Z feedrate to max
-      prepare_move_to_destination();                      // Raise up to the old current pos
+      prepare_move_to_destination();                      // Lower down to the old current pos
       hop_amount = 0.0;                                   // Clear hop
     }
 
