@@ -629,6 +629,18 @@ void stop() {
   }
 }
 
+void SetUpFAN2_PIN()
+{
+    SET_OUTPUT(KosselFAN2_PIN);
+    WRITE(KosselFAN2_PIN, LOW);  
+}
+void Fan2Scan()
+{
+  if(thermalManager.degHotend(0)>60)
+  WRITE(KosselFAN2_PIN, HIGH);
+  else WRITE(KosselFAN2_PIN, LOW);
+}
+
 /**
  * Marlin entry-point: Set up before the program loop
  *  - Set up the kill pin, filament runout, power hold
@@ -835,7 +847,8 @@ void setup() {
   #if HAS_FANMUX
     fanmux_init();
   #endif
-
+	
+  SetUpFAN2_PIN();
   lcd_init();
   LCD_MESSAGEPGM(WELCOME_MSG);
 
@@ -897,6 +910,7 @@ void loop() {
   #if ENABLED(SDSUPPORT)
     card.checkautostart(false);
   #endif
+	Fan2Scan();
 
   advance_command_queue();
 
