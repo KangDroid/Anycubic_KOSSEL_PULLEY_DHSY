@@ -65,7 +65,7 @@ PREFS="-prefs=build.warn_data_percentage=0 \
 	-prefs=runtime.tools.avrdude.path=/Applications/Arduino.app/Contents/Java/hardware/tools/avr \
 	-prefs=runtime.tools.arduinoOTA.path=/Applications/Arduino.app/Contents/Java/hardware/tools/avr \
 	-prefs=runtime.tools.avr-gcc.path=/Applications/Arduino.app/Contents/Java/hardware/tools/avr"
-INODIR=/Users/kangdroid/Desktop/Marlin/Marlin/Marlin.ino
+INODIR=/Users/kangdroid/Desktop/School/2nd/3DPrinting/Marlin/Marlin/Marlin.ino
 PROGRAMMER=wiring
 
 # Check command line variables before we begin.
@@ -104,7 +104,7 @@ while [ $# -gt 0 ]; do
 	  ;;
   --SlideFast | --Slidefast | --slidefast)
 	  ARG_DEVICE=slidefast
-	  ARG_PORT=/dev/cu.usbmodem1421
+	  ARG_PORT=/dev/cu.usbmodem1411
 	  ;;
   --upload)
 	  ARG_UPLOAD=yes
