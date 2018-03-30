@@ -40,7 +40,7 @@
   /**
    * Marlin release version identifier
    */
-  #define SHORT_BUILD_VERSION "bugfix-2.0.x"
+  #define SHORT_BUILD_VERSION "CORE200-2.0.x"
 
   /**
    * Verbose version identifier which should contain a reference to the location
@@ -75,7 +75,7 @@
   /**
    * Defines a generic printer name to be output to the LCD after booting Marlin.
    */
-  #define MACHINE_NAME "DHSY Core200"
+  #define MACHINE_NAME "DHSY CORE200"
 
   /**
    * The SOURCE_CODE_URL is the location where users will find the Marlin Source
