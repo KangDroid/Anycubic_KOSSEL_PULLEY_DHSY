@@ -413,6 +413,7 @@ private:
   #endif
 
   static void G92();
+  static void G99();
 
   #if HAS_RESUME_CONTINUE
     static void M0_M1();

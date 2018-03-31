@@ -274,6 +274,10 @@ void GcodeSuite::process_parsed_command() {
       case 92: // G92 - Set current axis position(s)
         G92();
         break;
+	
+		case 99:
+			G99();
+			break;
 
       #if HAS_MESH
         case 42: G42(); break;        // G42: Coordinated move to a mesh point
