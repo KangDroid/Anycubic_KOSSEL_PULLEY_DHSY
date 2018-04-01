@@ -109,7 +109,12 @@
 #ifndef MSG_PREHEAT_1
   #define MSG_PREHEAT_1                       _UxGT("Preheat PLA")
 #endif
-#define MSG_TESTING                       _UxGT("MSG_TESTING")
+#ifndef MSG_TESTING
+#define MSG_TESTING                       _UxGT("Testing")
+#endif
+#define MSG_TESTING_FAILED _UxGT("Testing Failed")
+#define MSG_TESTING_BED _UxGT("Testing Bed")
+#define MSG_TESTING_AUTO_HOME _UxGT("Testing auto home")
 #ifndef MSG_PREHEAT_1_N
   #define MSG_PREHEAT_1_N                     MSG_PREHEAT_1 _UxGT(" ")
 #endif
