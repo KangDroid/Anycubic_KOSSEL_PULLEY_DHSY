@@ -512,20 +512,6 @@ float soft_endstop_min[XYZ] = { X_MIN_BED, Y_MIN_BED, Z_MIN_POS },
     #define SCARA_MIN_SEGMENT_LENGTH 0.5
   #endif
 
-  #if IS_SCARA
-    /**
-     * Before raising this value, use M665 S[seg_per_sec] to decrease
-     * the number of segments-per-second. Default is 200. Some deltas
-     * do better with 160 or lower. It would be good to know how many
-     * segments-per-second are actually possible for SCARA on AVR.
-     *
-     * Longer segments result in less kinematic overhead
-     * but may produce jagged lines. Try 0.5mm, 1.0mm, and 2.0mm
-     * and compare the difference.
-     */
-    #define SCARA_MIN_SEGMENT_LENGTH 0.5
-  #endif
-
   /**
    * Prepare a linear move in a DELTA or SCARA setup.
    *
@@ -598,7 +584,6 @@ float soft_endstop_min[XYZ] = { X_MIN_BED, Y_MIN_BED, Z_MIN_POS },
     #if DISABLED(SCARA_FEEDRATE_SCALING)
       const float cartesian_segment_mm = cartesian_mm * inv_segments;
     #endif
-
 
     /*
     SERIAL_ECHOPAIR("mm=", cartesian_mm);
