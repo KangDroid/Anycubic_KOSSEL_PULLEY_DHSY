@@ -109,7 +109,6 @@
 #ifndef MSG_PREHEAT_1
   #define MSG_PREHEAT_1                       _UxGT("Preheat PLA")
 #endif
-#define MSG_TESTING                       _UxGT("MSG_TESTING")
 #ifndef MSG_PREHEAT_1_N
   #define MSG_PREHEAT_1_N                     MSG_PREHEAT_1 _UxGT(" ")
 #endif
