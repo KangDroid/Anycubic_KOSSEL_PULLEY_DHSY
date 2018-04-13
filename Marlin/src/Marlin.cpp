@@ -628,7 +628,7 @@ void stop() {
     Running = false;
   }
 }
-
+#if ENABLED(DHSY_KOSSEL_FAN)
 void SetUpFAN2_PIN()
 {
     SET_OUTPUT(KosselFAN2_PIN);
@@ -640,6 +640,7 @@ void Fan2Scan()
   WRITE(KosselFAN2_PIN, HIGH);
   else WRITE(KosselFAN2_PIN, LOW);
 }
+#endif
 
 /**
  * Marlin entry-point: Set up before the program loop
@@ -848,7 +849,9 @@ void setup() {
     fanmux_init();
   #endif
 	
+#if ENABLED(DHSY_KOSSEL_FAN)
   SetUpFAN2_PIN();
+#endif
   lcd_init();
   LCD_MESSAGEPGM(WELCOME_MSG);
 
@@ -909,7 +912,9 @@ void loop() {
   #if ENABLED(SDSUPPORT)
     card.checkautostart(false);
   #endif
+#if ENABLED(DHSY_KOSSEL_FAN)
 	Fan2Scan();
+#endif
 
   for (;;) {
     if (commands_in_queue < BUFSIZE) get_available_commands();

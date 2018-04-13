@@ -501,6 +501,9 @@
 
 #if ENABLED(DELTA)
 
+  // Enable custom fan options
+  #define DHSY_KOSSEL_FAN
+
   // Make delta curves from many straight lines (linear interpolation).
   // This is a trade-off between visible corners (not enough segments)
   // and processor overload (too many expensive sqrt calls).
