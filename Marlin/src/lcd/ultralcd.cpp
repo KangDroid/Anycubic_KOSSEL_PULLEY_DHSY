@@ -71,8 +71,6 @@
 #if ENABLED(AUTO_BED_LEVELING_UBL) || ENABLED(G26_MESH_VALIDATION)
   bool lcd_external_control; // = false
 #endif
-  
-  int IS_SOFT_ENDSTOP_ENABLED = 1;
 
 // Initialized by settings.load()
 int16_t lcd_preheat_hotend_temp[2], lcd_preheat_bed_temp[2], lcd_preheat_fan_speed[2];
@@ -3112,32 +3110,11 @@ void kill_screen(const char* lcd_msg) {
   #else
     #define _MOVE_XY_ALLOWED true
   #endif
-	
-  void disable_soft_endstop() {
-	enqueue_and_echo_commands_P(PSTR("M211 S0"));
-	IS_SOFT_ENDSTOP_ENABLED = 1;
-  } 
-  
-  void enable_soft_endstop() {
-  	enqueue_and_echo_commands_P(PSTR("M211 S1"));
-	IS_SOFT_ENDSTOP_ENABLED = 0;
-  }
 
   void lcd_move_menu() {
     START_MENU();
     MENU_BACK(MSG_PREPARE);
-	
-	#if ENABLED(MIN_SOFTWARE_ENDSTOPS) && ENABLED(MAX_SOFTWARE_ENDSTOPS) && ENABLED(SHOW_SOFT_ENDSTOP_MENU)
-	// Add Software endstop settings
-	if (IS_SOFT_ENDSTOP_ENABLED == 0) {
-		MENU_ITEM(function, MSG_SOFTWARE_ENDSTOPS_DISABLE, disable_soft_endstop);
-		//MENU_ITEM(gcode, MSG_SOFTWARE_ENDSTOPS_DISABLE, PSTR("M211 S0"));	
-	} else if (IS_SOFT_ENDSTOP_ENABLED == 1) {
-		MENU_ITEM(function, MSG_SOFTWARE_ENDSTOPS_ENABLE, enable_soft_endstop);
-		//MENU_ITEM(gcode, MSG_SOFTWARE_ENDSTOPS_ENABLE, PSTR("M211 S1"));
-	}
-	#endif
-	
+
     if (_MOVE_XYZ_ALLOWED) {
       if (_MOVE_XY_ALLOWED) {
         MENU_ITEM(submenu, MSG_MOVE_X, lcd_move_get_x_amount);
