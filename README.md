@@ -1,6 +1,6 @@
-# Marlin 3D Printer Firmware
+# DHSY Marlin 3D Printer Firmware
 
-[![Build Status](https://travis-ci.org/MarlinFirmware/Marlin.svg?branch=RCBugFix)](https://travis-ci.org/MarlinFirmware/Marlin)
+[![Build Status](https://travis-ci.org/KangDroid/Marlin.svg?branch=core200)](https://travis-ci.org/KangDroid/Marlin)
 [![Coverity Scan Build Status](https://scan.coverity.com/projects/2224/badge.svg)](https://scan.coverity.com/projects/2224)
 
 <img align="top" width=175 src="buildroot/share/pixmaps/logo/marlin-250.png" />
