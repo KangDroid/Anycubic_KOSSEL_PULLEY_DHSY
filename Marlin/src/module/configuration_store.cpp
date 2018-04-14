@@ -265,6 +265,8 @@ typedef struct SettingsDataStruct {
   float filament_change_unload_length[MAX_EXTRUDERS],   // M603 T U
         filament_change_load_length[MAX_EXTRUDERS];     // M603 T L
 
+	bool soft_endstops_enabled; //M211 S
+
 } SettingsData;
 
 #pragma pack(pop)
@@ -892,6 +894,8 @@ void MarlinSettings::postprocess() {
       for (uint8_t q = MAX_EXTRUDERS * 2; q--;) EEPROM_WRITE(dummy);
     #endif
 
+    EEPROM_WRITE(soft_endstops_enabled);
+
     //
     // Validate CRC and Data Size
     //
@@ -1482,6 +1486,13 @@ void MarlinSettings::postprocess() {
         for (uint8_t q = MAX_EXTRUDERS * 2; q--;) EEPROM_READ(dummy);
       #endif
 
+      #if ENABLED(SOFT_ENDSTOPS_MENU_ITEM)
+		    EEPROM_READ(soft_endstops_enabled);
+      #else
+        const bool soft_endstops_enabled = true;
+        EEPROM_READ(soft_endstops_enabled);
+      #endif
+
       eeprom_error = size_error(eeprom_index - (EEPROM_OFFSET));
       if (eeprom_error) {
         #if ENABLED(EEPROM_CHITCHAT)
@@ -1712,6 +1723,7 @@ void MarlinSettings::reset(PORTARG_SOLO) {
   planner.max_jerk[Y_AXIS] = DEFAULT_YJERK;
   planner.max_jerk[Z_AXIS] = DEFAULT_ZJERK;
   planner.max_jerk[E_AXIS] = DEFAULT_EJERK;
+  soft_endstops_enabled = true;
 
   #if HAS_HOME_OFFSET
     ZERO(home_offset);
@@ -1906,6 +1918,10 @@ void MarlinSettings::reset(PORTARG_SOLO) {
 
   #if ENABLED(ADVANCED_PAUSE_FEATURE)
     void say_M603(PORTARG_SOLO) { SERIAL_ECHOPGM_P(port, "  M603 "); }
+  #endif
+
+  #if ENABLED(SOFT_ENDSTOPS_MENU_ITEM)
+    void say_M211(PORTARG_SOLO) { SERIAL_ECHOPGM_P(port, "  M211 "); }
   #endif
 
   /**
@@ -2596,6 +2612,14 @@ void MarlinSettings::reset(PORTARG_SOLO) {
         #endif // EXTRUDERS > 2
       #endif // EXTRUDERS == 1
     #endif // ADVANCED_PAUSE_FEATURE
+
+    #if ENABLED(SOFT_ENDSTOPS_MENU_ITEM)
+      int boolInt = soft_endstops_enabled ? 1 : 0;
+      CONFIG_ECHO_START;
+      say_M211(PORTVAR_SOLO);
+      SERIAL_ECHOPAIR_P(port, "S", boolInt);
+      SERIAL_EOL_P(port);
+    #endif
   }
 
 #endif // !DISABLE_M503
