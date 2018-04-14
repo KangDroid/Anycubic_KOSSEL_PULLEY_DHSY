@@ -1838,12 +1838,6 @@
 #endif
 
 /**
- * Enable/Disable Software endstop options
- *
- */
-#define SHOW_SOFT_ENDSTOP_MENU
-
-/**
  * R/C SERVO support
  * Sponsored by TrinityLabs, Reworked by codexmas
  */

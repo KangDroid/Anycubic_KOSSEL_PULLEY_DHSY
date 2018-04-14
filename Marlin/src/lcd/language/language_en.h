@@ -55,12 +55,6 @@
 #ifndef MSG_LCD_ENDSTOPS
   #define MSG_LCD_ENDSTOPS                    _UxGT("Endstops") // Max length 8 characters
 #endif
-#ifndef MSG_SOFTWARE_ENDSTOPS_DISABLE
-  #define MSG_SOFTWARE_ENDSTOPS_DISABLE       _UxGT("Disable SE") // Max length 8 characters
-#endif
-#ifndef MSG_SOFTWARE_ENDSTOPS_ENABLE
-  #define MSG_SOFTWARE_ENDSTOPS_ENABLE        _UxGT("Enable SE") // Max length 8 characters
-#endif
 #ifndef MSG_MAIN
   #define MSG_MAIN                            _UxGT("Main")
 #endif
