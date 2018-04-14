@@ -265,6 +265,8 @@ typedef struct SettingsDataStruct {
   float filament_change_unload_length[MAX_EXTRUDERS],   // M603 T U
         filament_change_load_length[MAX_EXTRUDERS];     // M603 T L
 
+	bool soft_endstops_enabled; //M211 S
+
 } SettingsData;
 
 #pragma pack(pop)
@@ -892,6 +894,8 @@ void MarlinSettings::postprocess() {
       for (uint8_t q = MAX_EXTRUDERS * 2; q--;) EEPROM_WRITE(dummy);
     #endif
 
+    EEPROM_WRITE(soft_endstops_enabled);
+
     //
     // Validate CRC and Data Size
     //
@@ -1481,6 +1485,7 @@ void MarlinSettings::postprocess() {
       #else
         for (uint8_t q = MAX_EXTRUDERS * 2; q--;) EEPROM_READ(dummy);
       #endif
+		EEPROM_READ(soft_endstops_enabled);
 
       eeprom_error = size_error(eeprom_index - (EEPROM_OFFSET));
       if (eeprom_error) {
@@ -1712,6 +1717,7 @@ void MarlinSettings::reset(PORTARG_SOLO) {
   planner.max_jerk[Y_AXIS] = DEFAULT_YJERK;
   planner.max_jerk[Z_AXIS] = DEFAULT_ZJERK;
   planner.max_jerk[E_AXIS] = DEFAULT_EJERK;
+  soft_endstops_enabled = true;
 
   #if HAS_HOME_OFFSET
     ZERO(home_offset);
