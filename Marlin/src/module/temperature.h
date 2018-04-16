@@ -124,6 +124,8 @@ class Temperature {
                    current_temperature_chamber_raw,
                    current_temperature_bed_raw;
 
+    static uint16_t thermal_protect_period;
+
     #if ENABLED(AUTO_POWER_E_FANS)
       static int16_t autofan_speed[HOTENDS];
     #endif

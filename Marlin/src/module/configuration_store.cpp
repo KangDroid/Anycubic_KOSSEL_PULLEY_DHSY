@@ -268,6 +268,8 @@ typedef struct SettingsDataStruct {
   // tar settings
   uint8_t auto_report_temp_interval;
 
+  uint16_t thermal_protect_period_value;
+
 } SettingsData;
 
 #pragma pack(pop)
@@ -896,6 +898,7 @@ void MarlinSettings::postprocess() {
     #endif
 
     EEPROM_WRITE(thermalManager.auto_report_temp_interval);
+    EEPROM_WRITE(thermalManager.thermal_protect_period);
 
     //
     // Validate CRC and Data Size
@@ -1488,6 +1491,7 @@ void MarlinSettings::postprocess() {
       #endif
 
       EEPROM_READ(thermalManager.auto_report_temp_interval);
+      EEPROM_READ(thermalManager.thermal_protect_period);
 
       eeprom_error = size_error(eeprom_index - (EEPROM_OFFSET));
       if (eeprom_error) {
@@ -1720,6 +1724,7 @@ void MarlinSettings::reset(PORTARG_SOLO) {
   planner.max_jerk[Z_AXIS] = DEFAULT_ZJERK;
   planner.max_jerk[E_AXIS] = DEFAULT_EJERK;
   thermalManager.auto_report_temp_interval = 0;
+  thermalManager.thermal_protect_period = THERMAL_PROTECTION_PERIOD;
 
   #if HAS_HOME_OFFSET
     ZERO(home_offset);

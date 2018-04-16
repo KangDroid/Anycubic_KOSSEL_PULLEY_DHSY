@@ -91,6 +91,8 @@ int16_t Temperature::current_temperature_raw[HOTENDS] = { 0 },
         Temperature::current_temperature_chamber_raw = 0,
         Temperature::current_temperature_bed_raw = 0;
 
+uint16_t Temperature::thermal_protect_period = THERMAL_PROTECTION_PERIOD;
+
 #if ENABLED(AUTO_POWER_E_FANS)
   int16_t Temperature::autofan_speed[HOTENDS] = { 0 };
 #endif
@@ -814,7 +816,7 @@ void Temperature::manage_heater() {
 
     #if ENABLED(THERMAL_PROTECTION_HOTENDS)
       // Check for thermal runaway
-      thermal_runaway_protection(&thermal_runaway_state_machine[e], &thermal_runaway_timer[e], current_temperature[e], target_temperature[e], e, THERMAL_PROTECTION_PERIOD, THERMAL_PROTECTION_HYSTERESIS);
+      thermal_runaway_protection(&thermal_runaway_state_machine[e], &thermal_runaway_timer[e], current_temperature[e], target_temperature[e], e, thermal_protect_period, THERMAL_PROTECTION_HYSTERESIS);
     #endif
 
     soft_pwm_amount[e] = (current_temperature[e] > minttemp[e] || is_preheating(e)) && current_temperature[e] < maxttemp[e] ? (int)get_pid_output(e) >> 1 : 0;

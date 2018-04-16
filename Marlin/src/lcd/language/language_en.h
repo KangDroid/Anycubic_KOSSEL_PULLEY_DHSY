@@ -61,6 +61,9 @@
 #ifndef MSG_PRINT_INACTIVE
   #define MSG_PRINT_INACTIVE                 _UxGT("Inactive Time")
 #endif
+#ifndef MSG_HOTEND_PRT_PER
+  #define MSG_HOTEND_PRT_PER                 _UxGT("Hotend PR Period")
+#endif
 #ifndef MSG_PRINT_STEPPER_INACTIVE
   #define MSG_PRINT_STEPPER_INACTIVE         _UxGT("Stepper Timeout")
 #endif
