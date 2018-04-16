@@ -125,6 +125,7 @@ class Temperature {
                    current_temperature_bed_raw;
 
     static uint16_t thermal_protect_period;
+    static uint16_t thermal_protect_hytheresis;
 
     #if ENABLED(AUTO_POWER_E_FANS)
       static int16_t autofan_speed[HOTENDS];
