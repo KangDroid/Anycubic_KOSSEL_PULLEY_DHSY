@@ -76,6 +76,18 @@
 #ifndef MSG_LCD_SOFT_ENDSTOPS
   #define MSG_LCD_SOFT_ENDSTOPS               _UxGT("Soft Endstops")
 #endif
+#ifndef MSG_XY_HOME_FR_BASE
+  #define MSG_XY_HOME_FR_BASE               _UxGT("XY Home Base")
+#endif
+#ifndef MSG_XY_HOME_FR_RATIO
+  #define MSG_XY_HOME_FR_RATIO               _UxGT("XY Home Ratio")
+#endif
+#ifndef MSG_Z_HOME_FR_BASE
+  #define MSG_Z_HOME_FR_BASE               _UxGT("Z Home Base")
+#endif
+#ifndef MSG_Z_HOME_FR_RATIO
+  #define MSG_Z_HOME_FR_RATIO               _UxGT("Z Home Ratio")
+#endif
 #ifndef MSG_MAIN
   #define MSG_MAIN                            _UxGT("Main")
 #endif
