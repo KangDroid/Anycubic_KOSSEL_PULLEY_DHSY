@@ -59,6 +59,7 @@
 #include "endstops.h"
 #include "planner.h"
 #include "stepper.h"
+#include "motion.h"
 #include "temperature.h"
 #include "../lcd/ultralcd.h"
 #include "../core/language.h"
@@ -270,6 +271,10 @@ typedef struct SettingsDataStruct {
 
   uint16_t thermal_protect_period_value;
   uint16_t thermal_protect_hytheresis_value;
+  uint8_t xy_homing_speed_ratio_value;
+  uint8_t xy_homing_speed_base_value;
+  uint8_t z_homing_speed_ratio_value;
+  uint8_t z_homing_speed_base_value;
 
 } SettingsData;
 
@@ -904,6 +909,14 @@ void MarlinSettings::postprocess() {
     EEPROM_WRITE(thermalManager.thermal_protect_period);
 	_FIELD_TEST(thermalManager.thermal_protect_hytheresis);
     EEPROM_WRITE(thermalManager.thermal_protect_hytheresis);
+	_FIELD_TEST(xy_homing_speed_ratio);
+	EEPROM_WRITE(xy_homing_speed_ratio);
+	_FIELD_TEST(xy_homing_speed_base);
+	EEPROM_WRITE(xy_homing_speed_base);
+	_FIELD_TEST(z_homing_speed_ratio);
+	EEPROM_WRITE(z_homing_speed_ratio);
+	_FIELD_TEST(z_homing_speed_base);
+	EEPROM_WRITE(z_homing_speed_base);
 
     //
     // Validate CRC and Data Size
@@ -1498,10 +1511,18 @@ void MarlinSettings::postprocess() {
 			_FIELD_TEST(thermalManager.thermal_protect_hytheresis);
 			_FIELD_TEST(thermalManager.thermal_protect_period);
 			_FIELD_TEST(thermalManager.auto_report_temp_interval);
+			_FIELD_TEST(xy_homing_speed_ratio);
+			_FIELD_TEST(xy_homing_speed_base);
+		  	_FIELD_TEST(z_homing_speed_ratio);
+		  	_FIELD_TEST(z_homing_speed_base);
 			
       EEPROM_READ(thermalManager.auto_report_temp_interval);
       EEPROM_READ(thermalManager.thermal_protect_period);
       EEPROM_READ(thermalManager.thermal_protect_hytheresis);
+	  EEPROM_READ(xy_homing_speed_ratio);
+	  EEPROM_READ(xy_homing_speed_base);
+  	EEPROM_READ(z_homing_speed_ratio);
+  	EEPROM_READ(z_homing_speed_base);
 
       eeprom_error = size_error(eeprom_index - (EEPROM_OFFSET));
       if (eeprom_error) {
@@ -1736,6 +1757,10 @@ void MarlinSettings::reset(PORTARG_SOLO) {
   thermalManager.auto_report_temp_interval = 0;
   thermalManager.thermal_protect_period = THERMAL_PROTECTION_PERIOD;
   thermalManager.thermal_protect_hytheresis = THERMAL_PROTECTION_HYSTERESIS;
+  xy_homing_speed_ratio = 50;
+  xy_homing_speed_base = 60;
+  z_homing_speed_base = 60;
+  z_homing_speed_ratio = 4;
 
   #if HAS_HOME_OFFSET
     ZERO(home_offset);
@@ -2620,6 +2645,9 @@ void MarlinSettings::reset(PORTARG_SOLO) {
         #endif // EXTRUDERS > 2
       #endif // EXTRUDERS == 1
     #endif // ADVANCED_PAUSE_FEATURE
+			  CONFIG_ECHO_START;
+			  SERIAL_ECHOPAIR_P(port, "TESTING:", xy_homing_speed_ratio);
+			  SERIAL_ECHOLNPAIR_P(port, "TESTING2: ", xy_homing_speed_base);
   }
 
 #endif // !DISABLE_M503

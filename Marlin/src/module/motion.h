@@ -57,6 +57,13 @@ extern float cartes[XYZ];
 #else
   #define XY_PROBE_FEEDRATE_MM_S PLANNER_XY_FEEDRATE()
 #endif
+  
+  extern uint8_t xy_homing_speed_ratio;
+  extern uint8_t	xy_homing_speed_base;
+  //extern uint8_t xy_homing_speed = (xy_homing_speed_ratio*xy_homing_speed_base);
+  extern uint8_t z_homing_speed_ratio;
+  extern uint8_t	z_homing_speed_base;
+  //extern uint8_t z_homing_speed = (z_homing_speed_ratio*z_homing_speed_base);
 
 /**
  * Feed rates are often configured with mm/m
