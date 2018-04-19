@@ -107,11 +107,11 @@ int16_t feedrate_percentage = 100;
 // Homing feedrate is const progmem - compare to constexpr in the header
 const float homing_feedrate_mm_s[4] PROGMEM = {
   #if ENABLED(DELTA)
-    MMM_TO_MMS(HOMING_FEEDRATE_Z), MMM_TO_MMS(HOMING_FEEDRATE_Z),
+    MMM_TO_MMS((xy_homing_speed_ratio*xy_homing_speed_base)), MMM_TO_MMS((z_homing_speed_ratio*z_homing_speed_base)),
   #else
-    MMM_TO_MMS(HOMING_FEEDRATE_XY), MMM_TO_MMS(HOMING_FEEDRATE_XY),
+    MMM_TO_MMS((xy_homing_speed_ratio*xy_homing_speed_base)), MMM_TO_MMS((xy_homing_speed_ratio*xy_homing_speed_base)),
   #endif
-  MMM_TO_MMS(HOMING_FEEDRATE_Z), 0
+  MMM_TO_MMS((z_homing_speed_ratio*z_homing_speed_base)), 0
 };
 
 // Cartesian conversion result goes here:

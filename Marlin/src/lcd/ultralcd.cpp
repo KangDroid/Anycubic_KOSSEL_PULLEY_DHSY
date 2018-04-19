@@ -163,6 +163,11 @@ millis_t next_lcd_update_ms;
 uint8_t lcdDrawUpdate = LCDVIEW_CLEAR_CALL_REDRAW; // Set when the LCD needs to draw, decrements after every draw. Set to 2 in LCD routines so the LCD gets at least 1 full redraw (first redraw is partial)
 uint16_t max_display_update_time = 0;
 
+uint8_t xy_homing_speed_ratio;
+uint8_t	xy_homing_speed_base;
+uint8_t	z_homing_speed_base;
+uint8_t z_homing_speed_ratio;
+
 #if ENABLED(DOGLCD)
   bool drawing_screen, // = false
        first_page;
@@ -3233,6 +3238,10 @@ void kill_screen(const char* lcd_msg) {
     START_MENU();
     MENU_BACK(MSG_CONTROL);
     MENU_MULTIPLIER_ITEM_EDIT(int8, MSG_TEMP_AUTO_REPORT, &thermalManager.auto_report_temp_interval, 0, 60);
+	MENU_MULTIPLIER_ITEM_EDIT(int8, MSG_XY_HOME_FR_RATIO, &xy_homing_speed_ratio, 10, 100);
+	MENU_MULTIPLIER_ITEM_EDIT(int8, MSG_XY_HOME_FR_BASE, &xy_homing_speed_base, 10, 100);
+	//MENU_MULTIPLIER_ITEM_EDIT(int8, MSG_XY_HOME_FR_RATIO, &xy_homing_speed_ratio, 10, 100);
+	//MENU_MULTIPLIER_ITEM_EDIT(int8, MSG_XY_HOME_FR_BASE, &xy_homing_speed_base, 10, 100);
     MENU_MULTIPLIER_ITEM_EDIT(int3, MSG_HOTEND_PRT_PER, &thermalManager.thermal_protect_period, 0, 120);
     MENU_MULTIPLIER_ITEM_EDIT(int3, MSG_HE_HYTHERESIS, &thermalManager.thermal_protect_hytheresis, 0, 240);
     MENU_MULTIPLIER_ITEM_EDIT_CALLBACK(int3, MSG_PRINT_INACTIVE, &printer_inactive_time, 0, 1450, update_inactive_time);
