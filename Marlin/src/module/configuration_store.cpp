@@ -898,8 +898,11 @@ void MarlinSettings::postprocess() {
       for (uint8_t q = MAX_EXTRUDERS * 2; q--;) EEPROM_WRITE(dummy);
     #endif
 
+	_FIELD_TEST(thermalManager.auto_report_temp_interval);
     EEPROM_WRITE(thermalManager.auto_report_temp_interval);
+	_FIELD_TEST(thermalManager.thermal_protect_period);
     EEPROM_WRITE(thermalManager.thermal_protect_period);
+	_FIELD_TEST(thermalManager.thermal_protect_hytheresis);
     EEPROM_WRITE(thermalManager.thermal_protect_hytheresis);
 
     //
@@ -1491,7 +1494,11 @@ void MarlinSettings::postprocess() {
       #else
         for (uint8_t q = MAX_EXTRUDERS * 2; q--;) EEPROM_READ(dummy);
       #endif
-
+		
+			_FIELD_TEST(thermalManager.thermal_protect_hytheresis);
+			_FIELD_TEST(thermalManager.thermal_protect_period);
+			_FIELD_TEST(thermalManager.auto_report_temp_interval);
+			
       EEPROM_READ(thermalManager.auto_report_temp_interval);
       EEPROM_READ(thermalManager.thermal_protect_period);
       EEPROM_READ(thermalManager.thermal_protect_hytheresis);
