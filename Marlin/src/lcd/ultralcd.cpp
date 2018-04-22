@@ -43,6 +43,10 @@
   #include "../feature/pause.h"
 #endif
 
+#if ENABLED(POWER_LOSS_RECOVERY)
+  #include "../feature/power_loss_recovery.h"
+#endif
+
 #if ENABLED(PRINTCOUNTER) && ENABLED(LCD_INFO_MENU)
   #include "../libs/duration_t.h"
 #endif
@@ -760,7 +764,27 @@ void lcd_status_screen() {
   lcd_implementation_status_screen();
 }
 
-void lcd_reset_status() { lcd_setstatusPGM(PSTR(""), -1); }
+/**
+ * Reset the status message
+ */
+void lcd_reset_status() {
+  static const char paused[] PROGMEM = MSG_PRINT_PAUSED;
+  static const char printing[] PROGMEM = MSG_PRINTING;
+  static const char welcome[] PROGMEM = WELCOME_MSG;
+  const char *msg;
+  if (print_job_timer.isPaused())
+    msg = paused;
+  #if ENABLED(SDSUPPORT)
+    else if (card.sdprinting)
+      return lcd_setstatus(card.longFilename[0] ? card.longFilename : card.filename, true);
+  #endif
+  else if (print_job_timer.isRunning())
+    msg = printing;
+  else
+    msg = welcome;
+
+  lcd_setstatusPGM(msg, -1);
+}
 
 /**
  *
@@ -791,7 +815,7 @@ void kill_screen(const char* lcd_msg) {
   }
 
   void lcd_quick_feedback(const bool clear_buttons) {
-    lcdDrawUpdate = LCDVIEW_CLEAR_CALL_REDRAW;
+    lcd_refresh();
     if (clear_buttons) buttons = 0;
     next_button_update_ms = millis() + 500;
 
@@ -829,7 +853,7 @@ void kill_screen(const char* lcd_msg) {
       #if ENABLED(PARK_HEAD_ON_PAUSE)
         enqueue_and_echo_commands_P(PSTR("M125"));
       #endif
-      lcd_setstatusPGM(PSTR(MSG_PRINT_PAUSED), -1);
+      lcd_reset_status();
     }
 
     void lcd_sdcard_resume() {
@@ -842,25 +866,75 @@ void kill_screen(const char* lcd_msg) {
       lcd_reset_status();
     }
 
+    bool abort_sd_printing; // =false
+
     void lcd_sdcard_stop() {
-      card.stopSDPrint(
-        #if SD_RESORT
-          true
-        #endif
-      );
-      clear_command_queue();
-      quickstop_stepper();
-      print_job_timer.stop();
-      thermalManager.disable_all_heaters();
-      #if FAN_COUNT > 0
-        for (uint8_t i = 0; i < FAN_COUNT; i++) fanSpeeds[i] = 0;
-      #endif
-      wait_for_heatup = false;
+      abort_sd_printing = true;
       lcd_setstatusPGM(PSTR(MSG_PRINT_ABORTED), -1);
       lcd_return_to_status();
+
+      #if ENABLED(POWER_LOSS_RECOVERY)
+        card.openJobRecoveryFile(false);
+        job_recovery_info.valid_head = job_recovery_info.valid_foot = 0;
+        (void)card.saveJobRecoveryInfo();
+        card.closeJobRecoveryFile();
+        job_recovery_commands_count = 0;
+      #endif
     }
 
   #endif // SDSUPPORT
+
+  #if ENABLED(POWER_LOSS_RECOVERY)
+
+    static void lcd_sdcard_recover_job() {
+      char cmd[20];
+
+      // Return to status now
+      lcd_return_to_status();
+
+      // Turn leveling off and home
+      enqueue_and_echo_commands_P(PSTR("M420 S0\nG28"
+        #if !IS_KINEMATIC
+          " X Y"
+        #endif
+      ));
+
+      // Restore the bed temperature
+      sprintf_P(cmd, PSTR("M190 S%i"), job_recovery_info.target_temperature_bed);
+      enqueue_and_echo_command(cmd);
+
+      // Restore all hotend temperatures
+      HOTEND_LOOP() {
+        sprintf_P(cmd, PSTR("M109 S%i"), job_recovery_info.target_temperature[e]);
+        enqueue_and_echo_command(cmd);
+      }
+
+      // Restore print cooling fan speeds
+      for (uint8_t i = 0; i < FAN_COUNT; i++) {
+        sprintf_P(cmd, PSTR("M106 P%i S%i"), i, job_recovery_info.fanSpeeds[i]);
+        enqueue_and_echo_command(cmd);
+      }
+
+      // Start draining the job recovery command queue
+      job_recovery_phase = JOB_RECOVERY_YES;
+
+      // Resume the print job timer
+      if (job_recovery_info.print_job_elapsed)
+        print_job_timer.resume(job_recovery_info.print_job_elapsed);
+
+      // Start getting commands from SD
+      card.startFileprint();
+    }
+
+    static void lcd_job_recovery_menu() {
+      defer_return_to_status = true;
+      START_MENU();
+      MENU_ITEM(function, MSG_RESUME_PRINT, lcd_sdcard_recover_job);
+      MENU_ITEM(function, MSG_STOP_PRINT, lcd_sdcard_stop);
+      END_MENU();
+    }
+
+  #endif // POWER_LOSS_RECOVERY
 
   #if ENABLED(MENU_ITEM_CASE_LIGHT)
 
@@ -1735,7 +1809,7 @@ void kill_screen(const char* lcd_msg) {
 
     void lcd_enqueue_commands_P(const char * const cmd) {
       no_reentry = true;
-      enqueue_and_echo_commands_P_now(cmd);
+      enqueue_and_echo_commands_now_P(cmd);
       no_reentry = false;
     }
 
@@ -1836,7 +1910,7 @@ void kill_screen(const char* lcd_msg) {
       if (!lcd_wait_for_move) {
         #if MANUAL_PROBE_HEIGHT > 0 && DISABLED(MESH_BED_LEVELING)
           // Display "Done" screen and wait for moves to complete
-          line_to_z(Z_MIN_POS + MANUAL_PROBE_HEIGHT);
+          line_to_z(MANUAL_PROBE_HEIGHT);
           lcd_synchronize(PSTR(MSG_LEVEL_BED_DONE));
         #endif
         lcd_goto_previous_menu_no_defer();
@@ -2947,14 +3021,16 @@ void kill_screen(const char* lcd_msg) {
       const float diff = float((int32_t)encoderPosition) * move_menu_scale;
       #if IS_KINEMATIC
         manual_move_offset += diff;
-        // Limit only when trying to move towards the limit
-        if ((int32_t)encoderPosition < 0) NOLESS(manual_move_offset, min - current_position[axis]);
-        if ((int32_t)encoderPosition > 0) NOMORE(manual_move_offset, max - current_position[axis]);
+        if ((int32_t)encoderPosition < 0)
+          NOLESS(manual_move_offset, min - current_position[axis]);
+        else
+          NOMORE(manual_move_offset, max - current_position[axis]);
       #else
         current_position[axis] += diff;
-        // Limit only when trying to move towards the limit
-        if ((int32_t)encoderPosition < 0) NOLESS(current_position[axis], min);
-        if ((int32_t)encoderPosition > 0) NOMORE(current_position[axis], max);
+        if ((int32_t)encoderPosition < 0)
+          NOLESS(current_position[axis], min);
+        else
+          NOMORE(current_position[axis], max);
       #endif
 
       manual_move_to_current(axis);
@@ -3883,7 +3959,7 @@ void kill_screen(const char* lcd_msg) {
       encoderPosition = card.updir() ? ENCODER_STEPS_PER_MENU_ITEM : 0;
       encoderTopLine = 0;
       screen_changed = true;
-      lcdDrawUpdate = LCDVIEW_CLEAR_CALL_REDRAW;
+      lcd_refresh();
     }
 
     /**
@@ -4744,8 +4820,7 @@ void kill_screen(const char* lcd_msg) {
     void menu_edit_callback_ ## _name() { if (_menu_edit_ ## _name()) (*callbackFunc)(); } \
     void _menu_action_setting_edit_ ## _name(const char * const pstr, _type* const ptr, const _type minValue, const _type maxValue) { \
       lcd_save_previous_screen(); \
-      \
-      lcdDrawUpdate = LCDVIEW_CLEAR_CALL_REDRAW; \
+      lcd_refresh(); \
       \
       editLabel = pstr; \
       editValue = ptr; \
@@ -4885,6 +4960,7 @@ void kill_screen(const char* lcd_msg) {
       UNUSED(longFilename);
       card.openAndPrintFile(filename);
       lcd_return_to_status();
+      lcd_reset_status();
     }
 
     void menu_action_sddirectory(const char* filename, char* longFilename) {
@@ -4896,12 +4972,12 @@ void kill_screen(const char* lcd_msg) {
       #if ENABLED(DOGLCD)
         drawing_screen = false;
       #endif
-      lcdDrawUpdate = LCDVIEW_CLEAR_CALL_REDRAW;
+      lcd_refresh();
     }
 
   #endif // SDSUPPORT
 
-  void menu_action_setting_edit_bool(const char* pstr, bool* ptr) { UNUSED(pstr); *ptr ^= true; lcdDrawUpdate = LCDVIEW_CLEAR_CALL_REDRAW; }
+  void menu_action_setting_edit_bool(const char* pstr, bool* ptr) { UNUSED(pstr); *ptr ^= true; lcd_refresh(); }
   void menu_action_setting_edit_callback_bool(const char* pstr, bool* ptr, screenFunc_t callback) {
     menu_action_setting_edit_bool(pstr, ptr);
     (*callback)();
@@ -5074,7 +5150,7 @@ void lcd_update() {
         if (old_sd_status != 2) LCD_MESSAGEPGM(MSG_SD_REMOVED);
       }
 
-      lcdDrawUpdate = LCDVIEW_CLEAR_CALL_REDRAW;
+      lcd_refresh();
       lcd_implementation_init( // to maybe revive the LCD if static electricity killed it.
         #if ENABLED(LCD_PROGRESS_BAR)
           currentScreen == lcd_status_screen ? CHARSET_INFO : CHARSET_MENU
@@ -5083,6 +5159,13 @@ void lcd_update() {
     }
 
   #endif // SDSUPPORT && SD_DETECT_PIN
+
+  #if ENABLED(POWER_LOSS_RECOVERY)
+    if (job_recovery_commands_count && job_recovery_phase == JOB_RECOVERY_IDLE) {
+      lcd_goto_screen(lcd_job_recovery_menu);
+      job_recovery_phase = JOB_RECOVERY_MAYBE; // Waiting for a response
+    }
+  #endif
 
   const millis_t ms = millis();
   if (ELAPSED(ms, next_lcd_update_ms)
@@ -5319,7 +5402,7 @@ void lcd_finishstatus(const bool persist=false) {
       expire_status_ms = persist ? 0 : progress_bar_ms + PROGRESS_MSG_EXPIRE;
     #endif
   #endif
-  lcdDrawUpdate = LCDVIEW_CLEAR_CALL_REDRAW;
+  lcd_refresh();
 
   #if ENABLED(FILAMENT_LCD_DISPLAY) && ENABLED(SDSUPPORT)
     previous_lcd_status_ms = millis();  //get status message to show up for a while
