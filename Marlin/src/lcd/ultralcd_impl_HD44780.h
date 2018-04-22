@@ -755,6 +755,32 @@ static void lcd_implementation_status_screen() {
     }
 
   #endif // FILAMENT_LCD_DISPLAY && SDSUPPORT
+	
+#define M0A
+#ifdef M0A //remain time calc
+  if (IS_SD_PRINTING) {
+    float percent = card.percentDoneF();
+    if (percent >= 1.0 && percent < 100.0) {
+        char buffer[21];
+        memset(buffer, 0, sizeof(buffer));
+        duration_t d = print_job_timer.duration();
+        uint32_t remainTime = uint32_t(d.value  * (100.0 - percent) / percent);
+        d.value = remainTime;
+        d.toString(buffer);
+        lcd.print("ETE:");
+        lcd.print(buffer);
+        lcd.print("   ");
+        return;
+    } else {
+      printFile pf = print_job_timer.getCurrentFile();
+      lcd.print(ftostr12ns(pf.size/1024.0/1024.0));
+      lcd.print("MB E:");
+      lcd.print(itostr3(pf.filamentUsed));
+      lcd.print("mm");
+      return;
+    }
+  }
+#endif
 
   #if ENABLED(STATUS_MESSAGE_SCROLLING)
     static bool last_blink = false;

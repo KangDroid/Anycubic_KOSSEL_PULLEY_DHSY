@@ -62,6 +62,7 @@ void PrintCounter::incFilamentUsed(double const &amount) {
   if (!isLoaded()) return;
 
   data.filamentUsed += amount; // mm
+  currentFile.filamentUsed += amount; // mm
 }
 
 void PrintCounter::initStats() {
@@ -70,7 +71,11 @@ void PrintCounter::initStats() {
   #endif
 
   loaded = true;
-  data = { 0, 0, 0, 0, 0.0 };
+  data = { 0, 0, 0, 0, 0.0,
+      {0, 0, 0.0},
+      {0, 0, 0.0},
+      {0, 0, 0.0}
+    };
 
   saveStats();
   eeprom_write_byte((uint8_t*)address, 0x16);
@@ -152,6 +157,54 @@ void PrintCounter::showStats() {
   SERIAL_CHAR('m');
 
   SERIAL_EOL();
+  
+  SERIAL_PROTOCOLPGM(MSG_STATS);
+
+  SERIAL_ECHOPGM("current file size: ");
+  SERIAL_ECHO(this->currentFile.size);
+  SERIAL_ECHOPGM("filament used: ");
+  SERIAL_ECHO(this->currentFile.filamentUsed);
+  SERIAL_ECHOPGM("mm");
+  SERIAL_ECHOPGM(" print time: ");
+  SERIAL_ECHO(this->currentFile.printTime);
+
+  SERIAL_EOL;
+
+  SERIAL_PROTOCOLPGM(MSG_STATS);
+
+  SERIAL_ECHOPGM("file1 size: ");
+  SERIAL_ECHO(this->data.file1.size);
+  SERIAL_ECHOPGM(" filament used: ");
+  SERIAL_ECHO(this->data.file1.filamentUsed);
+  SERIAL_ECHOPGM("mm");
+  SERIAL_ECHOPGM(" print time: ");
+  SERIAL_ECHO(this->data.file1.printTime);
+
+  SERIAL_EOL;
+
+  SERIAL_PROTOCOLPGM(MSG_STATS);
+
+  SERIAL_ECHOPGM("file2 size: ");
+  SERIAL_ECHO(this->data.file2.size);
+  SERIAL_ECHOPGM("filament used: ");
+  SERIAL_ECHO(this->data.file2.filamentUsed);
+  SERIAL_ECHOPGM("mm");
+  SERIAL_ECHOPGM(" print time: ");
+  SERIAL_ECHO(this->data.file2.printTime);
+
+  SERIAL_EOL;
+
+  SERIAL_PROTOCOLPGM(MSG_STATS);
+
+  SERIAL_ECHOPGM("file3 size: ");
+  SERIAL_ECHO(this->data.file3.size);
+  SERIAL_ECHOPGM("filament used: ");
+  SERIAL_ECHO(this->data.file3.filamentUsed);
+  SERIAL_ECHOPGM("mm");
+  SERIAL_ECHOPGM(" print time: ");
+  SERIAL_ECHO(this->data.file3.printTime);
+
+  SERIAL_EOL;
 }
 
 void PrintCounter::tick() {
@@ -171,6 +224,7 @@ void PrintCounter::tick() {
     #endif
 
     data.printTime += deltaDuration();
+	currentFile.printTime = this->duration();
     update_last = now;
   }
 
@@ -194,6 +248,8 @@ bool PrintCounter::start() {
     if (!paused) {
       data.totalPrints++;
       lastDuration = 0;
+	  currentFile.printTime = 0;
+	  currentFile.filamentUsed = 0;
     }
     return true;
   }
@@ -213,6 +269,11 @@ bool PrintCounter::stop() {
 
     if (duration() > data.longestPrint)
       data.longestPrint = duration();
+	
+    currentFile.printTime = duration();
+    data.file3 = data.file2;
+    data.file2 = data.file1;
+    data.file1 = currentFile;
 
     saveStats();
     return true;
@@ -228,6 +289,16 @@ void PrintCounter::reset() {
 
   super::reset();
   lastDuration = 0;
+  currentFile.filamentUsed = 0.0;
+  currentFile.printTime = 0;
+}
+
+void PrintCounter::setFileSize(uint32_t size) {
+  currentFile.size = size;
+}
+
+printFile PrintCounter::getCurrentFile() {
+  return currentFile;
 }
 
 #if ENABLED(DEBUG_PRINTCOUNTER)

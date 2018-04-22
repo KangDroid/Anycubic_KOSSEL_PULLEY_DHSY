@@ -109,7 +109,9 @@ public:
   FORCE_INLINE int16_t get() { sdpos = file.curPosition(); return (int16_t)file.read(); }
   FORCE_INLINE void setIndex(long index) { sdpos = index; file.seekSet(index); }
   FORCE_INLINE uint8_t percentDone() { return (isFileOpen() && filesize) ? sdpos / ((filesize + 99) / 100) : 0; }
+  FORCE_INLINE float   percentDoneF() { return (isFileOpen() && filesize) ? sdpos / ((filesize + 99.0) / 100.0): 0.0; }
   FORCE_INLINE char* getWorkDirName() { workDir.getFilename(filename); return filename; }
+  FORCE_INLINE uint32_t getFileSize() { return (isFileOpen()) ? filesize: 0; }
 
   Sd2Card& getSd2Card() { return card; }
 
