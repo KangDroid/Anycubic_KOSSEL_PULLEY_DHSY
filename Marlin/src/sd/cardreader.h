@@ -119,7 +119,9 @@ public:
   FORCE_INLINE void setIndex(const uint32_t index) { sdpos = index; file.seekSet(index); }
   FORCE_INLINE uint32_t getIndex() { return sdpos; }
   FORCE_INLINE uint8_t percentDone() { return (isFileOpen() && filesize) ? sdpos / ((filesize + 99) / 100) : 0; }
+  FORCE_INLINE float   percentDoneF() { return (isFileOpen() && filesize) ? sdpos / ((filesize + 99.0) / 100.0): 0.0; }
   FORCE_INLINE char* getWorkDirName() { workDir.getFilename(filename); return filename; }
+  FORCE_INLINE uint32_t getFileSize() { return (isFileOpen()) ? filesize: 0; }
 
   Sd2Card& getSd2Card() { return card; }
 

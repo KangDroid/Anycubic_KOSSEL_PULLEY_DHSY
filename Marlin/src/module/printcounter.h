@@ -30,6 +30,12 @@
 // Print debug messages with M111 S2
 //#define DEBUG_PRINTCOUNTER
 
+struct printFile {
+  uint32_t size;
+  uint32_t printTime;
+  double filamentUsed;
+};
+
 #if ENABLED(I2C_EEPROM) || ENABLED(SPI_EEPROM)
   // round up address to next page boundary (assuming 32 byte pages)
   #define STATS_EEPROM_ADDRESS 0x40
@@ -44,6 +50,9 @@ struct printStatistics {    // 16 bytes (20 with real doubles)
   uint32_t printTime;       // Accumulated printing time
   uint32_t longestPrint;    // Longest successful print job
   double   filamentUsed;    // Accumulated filament consumed in mm
+  printFile file1;
+  printFile file2;
+  printFile file3;
 };
 
 class PrintCounter: public Stopwatch {
@@ -57,6 +66,7 @@ class PrintCounter: public Stopwatch {
     #endif
 
     static printStatistics data;
+	static printFile currentFile;
 
     /**
      * @brief EEPROM address
@@ -175,6 +185,8 @@ class PrintCounter: public Stopwatch {
     static bool start();
     static bool stop();
     static void reset();
+    static void setFileSize(uint32_t size);
+    static printFile getCurrentFile();
 
     #if ENABLED(DEBUG_PRINTCOUNTER)
 
