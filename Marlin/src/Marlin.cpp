@@ -633,6 +633,18 @@ void stop() {
   }
 }
 
+void SetUpFAN2_PIN()
+{
+    SET_OUTPUT(FAN_STATIC_PIN);
+    WRITE(FAN_STATIC_PIN, LOW);  
+}
+void Fan2Scan()
+{
+  if(thermalManager.degHotend(0)>40)
+  WRITE(FAN_STATIC_PIN, HIGH);
+  else WRITE(FAN_STATIC_PIN, LOW);
+}
+
 /**
  * Marlin entry-point: Set up before the program loop
  *  - Set up the kill pin, filament runout, power hold
@@ -839,7 +851,8 @@ void setup() {
   #if HAS_FANMUX
     fanmux_init();
   #endif
-
+	
+  SetUpFAN2_PIN();
   lcd_init();
   LCD_MESSAGEPGM(WELCOME_MSG);
 
@@ -923,7 +936,8 @@ void loop() {
         wait_for_heatup = false;
       }
     #endif // SDSUPPORT && ULTIPANEL
-
+	  
+	Fan2Scan();
     if (commands_in_queue < BUFSIZE) get_available_commands();
     advance_command_queue();
     endstops.report_state();
