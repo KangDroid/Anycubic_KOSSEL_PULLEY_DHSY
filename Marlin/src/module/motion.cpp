@@ -396,13 +396,13 @@ void do_blocking_move_to(const float rx, const float ry, const float rz, const f
 
   #endif
 
-  stepper.synchronize();
-
   feedrate_mm_s = old_feedrate_mm_s;
 
   #if ENABLED(DEBUG_LEVELING_FEATURE)
     if (DEBUGGING(LEVELING)) SERIAL_ECHOLNPGM("<<< do_blocking_move_to");
   #endif
+
+  stepper.synchronize();
 }
 void do_blocking_move_to_x(const float &rx, const float &fr_mm_s/*=0.0*/) {
   do_blocking_move_to(rx, current_position[Y_AXIS], current_position[Z_AXIS], fr_mm_s);
@@ -881,8 +881,8 @@ float soft_endstop_min[XYZ] = { X_MIN_BED, Y_MIN_BED, Z_MIN_POS },
               current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS],
               planner.max_feedrate_mm_s[X_AXIS], 1
             );
-            SYNC_PLAN_POSITION_KINEMATIC();
             stepper.synchronize();
+            SYNC_PLAN_POSITION_KINEMATIC();
             extruder_duplication_enabled = true;
             active_extruder_parked = false;
             #if ENABLED(DEBUG_LEVELING_FEATURE)
@@ -985,9 +985,12 @@ void prepare_move_to_destination() {
 #endif // HAS_AXIS_UNHOMED_ERR
 
 /**
- * The homing feedrate may vary
+ * Homing bump feedrate (mm/s)
  */
 inline float get_homing_bump_feedrate(const AxisEnum axis) {
+  #if HOMING_Z_WITH_PROBE
+    if (axis == Z_AXIS) return MMM_TO_MMS(Z_PROBE_SPEED_SLOW);
+  #endif
   static const uint8_t homing_bump_divisor[] PROGMEM = HOMING_BUMP_DIVISOR;
   uint8_t hbd = pgm_read_byte(&homing_bump_divisor[axis]);
   if (hbd < 1) {
@@ -1051,8 +1054,8 @@ static void do_homing_move(const AxisEnum axis, const float distance, const floa
       SERIAL_ECHOPAIR(">>> do_homing_move(", axis_codes[axis]);
       SERIAL_ECHOPAIR(", ", distance);
       SERIAL_ECHOPAIR(", ", fr_mm_s);
-      SERIAL_CHAR(')');
-      SERIAL_EOL();
+      SERIAL_ECHOPAIR(" [", fr_mm_s ? fr_mm_s : homing_feedrate(axis));
+      SERIAL_ECHOLNPGM("])");
     }
   #endif
 
@@ -1103,7 +1106,7 @@ static void do_homing_move(const AxisEnum axis, const float distance, const floa
     planner.buffer_line(delta[A_AXIS], delta[B_AXIS], delta[C_AXIS], current_position[E_AXIS], fr_mm_s ? fr_mm_s : homing_feedrate(axis), active_extruder);
   #else
     sync_plan_position();
-    current_position[axis] = distance;
+    current_position[axis] = distance; // Set delta/cartesian axes directly
     planner.buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS], fr_mm_s ? fr_mm_s : homing_feedrate(axis), active_extruder);
   #endif
 
@@ -1291,7 +1294,7 @@ void homeaxis(const AxisEnum axis) {
   // When homing Z with probe respect probe clearance
   const float bump = axis_home_dir * (
     #if HOMING_Z_WITH_PROBE
-      (axis == Z_AXIS) ? max(Z_CLEARANCE_BETWEEN_PROBES, home_bump_mm(Z_AXIS)) :
+      (axis == Z_AXIS && (Z_HOME_BUMP_MM)) ? max(Z_CLEARANCE_BETWEEN_PROBES, Z_HOME_BUMP_MM) :
     #endif
     home_bump_mm(axis)
   );
@@ -1302,7 +1305,11 @@ void homeaxis(const AxisEnum axis) {
     #if ENABLED(DEBUG_LEVELING_FEATURE)
       if (DEBUGGING(LEVELING)) SERIAL_ECHOLNPGM("Move Away:");
     #endif
-    do_homing_move(axis, -bump);
+    do_homing_move(axis, -bump
+      #if HOMING_Z_WITH_PROBE
+        , axis == Z_AXIS ? MMM_TO_MMS(Z_PROBE_SPEED_FAST) : 0.0
+      #endif
+    );
 
     // Slow move towards endstop until triggered
     #if ENABLED(DEBUG_LEVELING_FEATURE)

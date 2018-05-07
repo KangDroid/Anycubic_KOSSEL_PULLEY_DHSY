@@ -240,8 +240,6 @@ void move_to(const float &rx, const float &ry, const float &z, const float &e_de
     destination[E_AXIS] = current_position[E_AXIS];
 
     G26_line_to_destination(feed_value);
-
-    stepper.synchronize();
     set_destination_from_current();
   }
 
@@ -256,8 +254,6 @@ void move_to(const float &rx, const float &ry, const float &z, const float &e_de
   destination[E_AXIS] += e_delta;
 
   G26_line_to_destination(feed_value);
-
-  stepper.synchronize();
   set_destination_from_current();
 }
 
@@ -422,7 +418,9 @@ inline bool turn_on_heaters() {
       if (g26_bed_temp > 25) {
         lcd_setstatusPGM(PSTR("G26 Heating Bed."), 99);
         lcd_quick_feedback(true);
-        lcd_external_control = true;
+        #if ENABLED(NEWPANEL)
+          lcd_external_control = true;
+        #endif
     #endif
         thermalManager.setTargetBed(g26_bed_temp);
         while (abs(thermalManager.degBed() - g26_bed_temp) > 3) {
@@ -497,13 +495,11 @@ inline bool prime_nozzle() {
           if (Total_Prime >= EXTRUDE_MAXLENGTH) return G26_ERR;
         #endif
         G26_line_to_destination(planner.max_feedrate_mm_s[E_AXIS] / 15.0);
-
+        set_destination_from_current();
         stepper.synchronize();    // Without this synchronize, the purge is more consistent,
                                   // but because the planner has a buffer, we won't be able
                                   // to stop as quickly. So we put up with the less smooth
                                   // action to give the user a more responsive 'Stop'.
-        set_destination_from_current();
-        idle();
       }
 
       wait_for_release();
@@ -524,7 +520,6 @@ inline bool prime_nozzle() {
     set_destination_from_current();
     destination[E_AXIS] += g26_prime_length;
     G26_line_to_destination(planner.max_feedrate_mm_s[E_AXIS] / 15.0);
-    stepper.synchronize();
     set_destination_from_current();
     retract_filament(destination);
   }
@@ -698,7 +693,6 @@ void GcodeSuite::G26() {
 
   if (current_position[Z_AXIS] < Z_CLEARANCE_BETWEEN_PROBES) {
     do_blocking_move_to_z(Z_CLEARANCE_BETWEEN_PROBES);
-    stepper.synchronize();
     set_current_from_destination();
   }
 
@@ -729,7 +723,7 @@ void GcodeSuite::G26() {
   move_to(destination, 0.0);
   move_to(destination, g26_ooze_amount);
 
-  #if ENABLED(ULTRA_LCD)
+  #if ENABLED(NEWPANEL)
     lcd_external_control = true;
   #endif
 
@@ -834,7 +828,7 @@ void GcodeSuite::G26() {
   move_to(destination, 0); // Move back to the starting position
   //debug_current_and_destination(PSTR("done doing X/Y move."));
 
-  #if ENABLED(ULTRA_LCD)
+  #if ENABLED(NEWPANEL)
     lcd_external_control = false;     // Give back control of the LCD Panel!
   #endif
 
