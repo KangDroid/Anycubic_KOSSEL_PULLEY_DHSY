@@ -167,11 +167,6 @@
 #endif
 
 /**
- * Auto Bed Leveling and Z Probe Repeatability Test
- */
-#define HOMING_Z_WITH_PROBE (HAS_BED_PROBE && Z_HOME_DIR < 0 && ENABLED(Z_MIN_PROBE_USES_Z_MIN_ENDSTOP_PIN))
-
-/**
  * Z Sled Probe requires Z_SAFE_HOMING
  */
 #if ENABLED(Z_PROBE_SLED)
@@ -401,12 +396,6 @@
 #ifdef __SAM3X8E__
   #define HEATER_USES_AD595 (ENABLED(HEATER_0_USES_AD595) || ENABLED(HEATER_1_USES_AD595) || ENABLED(HEATER_2_USES_AD595) || ENABLED(HEATER_3_USES_AD595))
 #endif
-
-/**
- * Flags for PID handling
- */
-#define HAS_PID_HEATING (ENABLED(PIDTEMP) || ENABLED(PIDTEMPBED))
-#define HAS_PID_FOR_BOTH (ENABLED(PIDTEMP) && ENABLED(PIDTEMPBED))
 
 /**
  * Default hotend offsets, if not defined
@@ -730,14 +719,14 @@
 #define E3_IS_TRINAMIC (ENABLED(E3_IS_TMC2130) || ENABLED(E3_IS_TMC2208))
 #define E4_IS_TRINAMIC (ENABLED(E4_IS_TMC2130) || ENABLED(E4_IS_TMC2208))
 
-// Disable Z axis sensorless homing if a probe is used to home the Z axis
 #if ENABLED(SENSORLESS_HOMING)
-  #define X_SENSORLESS (ENABLED(X_IS_TMC2130) && defined(X_HOMING_SENSITIVITY))
-  #define Y_SENSORLESS (ENABLED(Y_IS_TMC2130) && defined(Y_HOMING_SENSITIVITY))
-  #define Z_SENSORLESS (ENABLED(Z_IS_TMC2130) && defined(Z_HOMING_SENSITIVITY))
+  // Disable Z axis sensorless homing if a probe is used to home the Z axis
   #if HOMING_Z_WITH_PROBE
     #undef Z_HOMING_SENSITIVITY
   #endif
+  #define X_SENSORLESS (ENABLED(X_IS_TMC2130) && defined(X_HOMING_SENSITIVITY))
+  #define Y_SENSORLESS (ENABLED(Y_IS_TMC2130) && defined(Y_HOMING_SENSITIVITY))
+  #define Z_SENSORLESS (ENABLED(Z_IS_TMC2130) && defined(Z_HOMING_SENSITIVITY))
 #endif
 
 // Endstops and bed probe
@@ -764,7 +753,6 @@
 #define HAS_TEMP_HOTEND (HAS_TEMP_0 || ENABLED(HEATER_0_USES_MAX6675))
 #define HAS_TEMP_BED (PIN_EXISTS(TEMP_BED) && TEMP_SENSOR_BED != 0 && TEMP_SENSOR_BED > -2)
 #define HAS_TEMP_CHAMBER (PIN_EXISTS(TEMP_CHAMBER) && TEMP_SENSOR_CHAMBER != 0 && TEMP_SENSOR_CHAMBER > -2)
-#define HAS_TEMP_SENSOR (HAS_TEMP_HOTEND || HAS_TEMP_BED || HAS_TEMP_CHAMBER)
 
 // Heaters
 #define HAS_HEATER_0 (PIN_EXISTS(HEATER_0))
@@ -774,8 +762,19 @@
 #define HAS_HEATER_4 (PIN_EXISTS(HEATER_4))
 #define HAS_HEATER_BED (PIN_EXISTS(HEATER_BED))
 
+// Shorthand for common combinations
+#define HAS_HEATED_BED (HAS_TEMP_BED && HAS_HEATER_BED)
+#define HAS_TEMP_SENSOR (HAS_TEMP_HOTEND || HAS_HEATED_BED || HAS_TEMP_CHAMBER)
+
+// PID heating
+#if !HAS_HEATED_BED
+  #undef PIDTEMPBED
+#endif
+#define HAS_PID_HEATING (ENABLED(PIDTEMP) || ENABLED(PIDTEMPBED))
+#define HAS_PID_FOR_BOTH (ENABLED(PIDTEMP) && ENABLED(PIDTEMPBED))
+
 // Thermal protection
-#define HAS_THERMALLY_PROTECTED_BED (ENABLED(THERMAL_PROTECTION_BED) && HAS_TEMP_BED && HAS_HEATER_BED)
+#define HAS_THERMALLY_PROTECTED_BED (HAS_HEATED_BED && ENABLED(THERMAL_PROTECTION_BED))
 #define WATCH_HOTENDS (ENABLED(THERMAL_PROTECTION_HOTENDS) && WATCH_TEMP_PERIOD > 0)
 #define WATCH_THE_BED (HAS_THERMALLY_PROTECTED_BED && WATCH_BED_TEMP_PERIOD > 0)
 
@@ -810,11 +809,15 @@
 #define HAS_CONTROLLER_FAN (PIN_EXISTS(CONTROLLER_FAN))
 
 // Servos
-#define HAS_SERVOS (defined(NUM_SERVOS) && NUM_SERVOS > 0)
 #define HAS_SERVO_0 (PIN_EXISTS(SERVO0))
 #define HAS_SERVO_1 (PIN_EXISTS(SERVO1))
 #define HAS_SERVO_2 (PIN_EXISTS(SERVO2))
 #define HAS_SERVO_3 (PIN_EXISTS(SERVO3))
+#define HAS_SERVOS (defined(NUM_SERVOS) && NUM_SERVOS > 0)
+
+#if HAS_SERVOS && !defined(Z_PROBE_SERVO_NR)
+  #define Z_PROBE_SERVO_NR -1
+#endif
 
 // Sensors
 #define HAS_FILAMENT_WIDTH_SENSOR (PIN_EXISTS(FILWIDTH))
@@ -897,7 +900,7 @@
 /**
  * Heated bed requires settings
  */
-#if HAS_HEATER_BED
+#if HAS_HEATED_BED
   #ifndef MAX_BED_POWER
     #define MAX_BED_POWER 255
   #endif
@@ -936,22 +939,6 @@
  * Part Cooling fan multipliexer
  */
 #define HAS_FANMUX PIN_EXISTS(FANMUX0)
-
-/**
- * Servos and probes
- */
-
-#if HAS_SERVOS
-  #ifndef Z_PROBE_SERVO_NR
-    #define Z_PROBE_SERVO_NR -1
-  #endif
-#endif
-
-#define HAS_BED_PROBE (PROBE_SELECTED && DISABLED(PROBE_MANUALLY))
-
-#if ENABLED(Z_PROBE_ALLEN_KEY)
-  #define PROBE_IS_TRIGGERED_WHEN_STOWED_TEST
-#endif
 
 /**
  * Bed Probe dependencies

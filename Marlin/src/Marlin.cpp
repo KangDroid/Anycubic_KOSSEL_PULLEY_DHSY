@@ -910,21 +910,18 @@ void setup() {
  *
  *  - Save or log commands to SD
  *  - Process available commands (if not saving)
- *  - Call heater manager
- *  - Call inactivity manager
  *  - Call endstop manager
- *  - Call LCD update
+ *  - Call inactivity manager
  */
 void loop() {
-
-  #if ENABLED(SDSUPPORT)
-    card.checkautostart(false);
-  #endif
 #if ENABLED(DHSY_KOSSEL_FAN)
 	Fan2Scan();
 #endif
-
   for (;;) {
+
+    #if ENABLED(SDSUPPORT)
+      card.checkautostart();
+    #endif
 
     #if ENABLED(SDSUPPORT) && ENABLED(ULTIPANEL)
       if (abort_sd_printing) {
