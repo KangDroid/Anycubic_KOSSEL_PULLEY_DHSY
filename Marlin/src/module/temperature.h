@@ -120,7 +120,6 @@ class Temperature {
     static uint8_t soft_pwm_amount[HOTENDS];
 
     static uint16_t thermal_protect_period;
-    static uint16_t thermal_protect_hytheresis;
 
     #if ENABLED(AUTO_POWER_E_FANS)
       static int16_t autofan_speed[HOTENDS];
