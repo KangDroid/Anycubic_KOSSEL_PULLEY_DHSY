@@ -3367,7 +3367,6 @@ void lcd_quick_feedback(const bool clear_buttons) {
     START_MENU();
     MENU_BACK(MSG_CONTROL);
     MENU_MULTIPLIER_ITEM_EDIT(int8, MSG_TEMP_AUTO_REPORT, &thermalManager.auto_report_temp_interval, 0, 60);
-    MENU_MULTIPLIER_ITEM_EDIT(int3, MSG_HOTEND_PRT_PER, &thermalManager.thermal_protect_period, 0, 120);
     MENU_MULTIPLIER_ITEM_EDIT_CALLBACK(int3, MSG_PRINT_INACTIVE, &printer_inactive_time, 0, 1450, update_inactive_time);
     MENU_MULTIPLIER_ITEM_EDIT_CALLBACK(int3, MSG_PRINT_STEPPER_INACTIVE, &printer_stepper_inactive_time, 0, 1450, update_stepper_inactive_time);
     END_MENU();
