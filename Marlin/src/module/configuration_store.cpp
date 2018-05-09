@@ -265,9 +265,6 @@ typedef struct SettingsDataStruct {
   float filament_change_unload_length[MAX_EXTRUDERS],   // M603 T U
         filament_change_load_length[MAX_EXTRUDERS];     // M603 T L
 
-  // tar settings
-  uint8_t auto_report_temp_interval;
-
 } SettingsData;
 
 #pragma pack(pop)
@@ -895,8 +892,6 @@ void MarlinSettings::postprocess() {
       for (uint8_t q = MAX_EXTRUDERS * 2; q--;) EEPROM_WRITE(dummy);
     #endif
 
-    EEPROM_WRITE(thermalManager.auto_report_temp_interval);
-
     //
     // Validate CRC and Data Size
     //
@@ -1487,8 +1482,6 @@ void MarlinSettings::postprocess() {
         for (uint8_t q = MAX_EXTRUDERS * 2; q--;) EEPROM_READ(dummy);
       #endif
 
-      EEPROM_READ(thermalManager.auto_report_temp_interval);
-
       eeprom_error = size_error(eeprom_index - (EEPROM_OFFSET));
       if (eeprom_error) {
         #if ENABLED(EEPROM_CHITCHAT)
@@ -1719,7 +1712,6 @@ void MarlinSettings::reset(PORTARG_SOLO) {
   planner.max_jerk[Y_AXIS] = DEFAULT_YJERK;
   planner.max_jerk[Z_AXIS] = DEFAULT_ZJERK;
   planner.max_jerk[E_AXIS] = DEFAULT_EJERK;
-  thermalManager.auto_report_temp_interval = 0;
 
   #if HAS_HOME_OFFSET
     ZERO(home_offset);

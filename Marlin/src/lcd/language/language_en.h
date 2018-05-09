@@ -52,18 +52,6 @@
 #ifndef MSG_SD_REMOVED
   #define MSG_SD_REMOVED                      _UxGT("Card removed")
 #endif
-#ifndef MSG_ADVANCED_MENU
-  #define MSG_ADVANCED_MENU                      _UxGT("Advanced")
-#endif
-#ifndef MSG_TEMP_AUTO_REPORT
-  #define MSG_TEMP_AUTO_REPORT                 _UxGT("TAR Interval")
-#endif
-#ifndef MSG_PRINT_INACTIVE
-  #define MSG_PRINT_INACTIVE                 _UxGT("Inactive Time")
-#endif
-#ifndef MSG_PRINT_STEPPER_INACTIVE
-  #define MSG_PRINT_STEPPER_INACTIVE         _UxGT("Stepper Timeout")
-#endif
 #ifndef MSG_LCD_ENDSTOPS
   #define MSG_LCD_ENDSTOPS                    _UxGT("Endstops") // Max length 8 characters
 #endif

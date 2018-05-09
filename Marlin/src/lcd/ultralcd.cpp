@@ -72,12 +72,6 @@
   #include "../libs/buzzer.h"
 #endif
 
-// Printer inactive times
-static int16_t printer_inactive_time = 0;
-
-//printer stepper inactive time
-static int16_t printer_stepper_inactive_time = 0;
-
 #if ENABLED(STATUS_MESSAGE_SCROLLING)
   #if LONG_FILENAME_LENGTH > CHARSIZE * 2 * (LCD_WIDTH)
     #define MAX_MESSAGE_LENGTH LONG_FILENAME_LENGTH
@@ -3355,23 +3349,6 @@ void lcd_quick_feedback(const bool clear_buttons) {
 
   #endif
 
-  void update_inactive_time() {
-    max_inactive_time = millis() + 1000UL * printer_inactive_time * 60;
-  }
-
-  void update_stepper_inactive_time() {
-    stepper_inactive_time =  1000UL * printer_stepper_inactive_time * 60;
-  }
-
-  void advanced_control_menu() {
-    START_MENU();
-    MENU_BACK(MSG_CONTROL);
-    MENU_MULTIPLIER_ITEM_EDIT(int8, MSG_TEMP_AUTO_REPORT, &thermalManager.auto_report_temp_interval, 0, 60);
-    MENU_MULTIPLIER_ITEM_EDIT_CALLBACK(int3, MSG_PRINT_INACTIVE, &printer_inactive_time, 0, 1450, update_inactive_time);
-    MENU_MULTIPLIER_ITEM_EDIT_CALLBACK(int3, MSG_PRINT_STEPPER_INACTIVE, &printer_stepper_inactive_time, 0, 1450, update_stepper_inactive_time);
-    END_MENU();
-  }
-
   void lcd_control_menu() {
     START_MENU();
     MENU_BACK(MSG_MAIN);
@@ -3399,10 +3376,6 @@ void lcd_quick_feedback(const bool clear_buttons) {
 
     #if ENABLED(BLTOUCH)
       MENU_ITEM(submenu, MSG_BLTOUCH, bltouch_menu);
-    #endif
-
-    #if ENABLED(LCD_CONTROL_ADVANCED_MENU)
-    MENU_ITEM(submenu, MSG_ADVANCED_MENU, advanced_control_menu);
     #endif
 
     #if ENABLED(EEPROM_SETTINGS)
