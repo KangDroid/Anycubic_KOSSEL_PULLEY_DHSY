@@ -458,19 +458,25 @@ void lcd_kill_screen() {
   lcd_put_u8str_rom(PSTR(MSG_PLEASE_RESET));
 }
 
-FORCE_INLINE void _draw_axis_label(const AxisEnum axis, const char* const pstr, const bool blink) {
+//
+// Before homing, blink '123' <-> '???'.
+// Homed but unknown... '123' <-> '   '.
+// Homed and known, display constantly.
+//
+FORCE_INLINE void _draw_axis_value(const AxisEnum axis, const char *value, const bool blink) {
+  lcd_put_wchar('X' + uint8_t(axis));
   if (blink)
-    lcd_put_u8str_rom(pstr);
+    lcd_put_u8str(value);
   else {
     if (!axis_homed[axis])
-      lcd_put_wchar('?');
+      while (const char c = *value++) lcd_put_wchar(c <= '.' ? c : '?');
     else {
       #if DISABLED(HOME_AFTER_DEACTIVATE) && DISABLED(DISABLE_REDUCED_ACCURACY_WARNING)
         if (!axis_known_position[axis])
-          lcd_put_wchar(' ');
+          lcd_put_u8str_rom(axis == Z_AXIS ? PSTR("      ") : PSTR("    "));
         else
       #endif
-          lcd_put_u8str_rom(pstr);
+          lcd_put_u8str(value);
     }
   }
 }
@@ -658,25 +664,19 @@ static void lcd_implementation_status_screen() {
         ), blink);
 
       #else // HOTENDS <= 2 && (HOTENDS <= 1 || !TEMP_SENSOR_BED)
-        // Before homing the axis letters are blinking 'X' <-> '?'.
-        // When axis is homed but axis_known_position is false the axis letters are blinking 'X' <-> ' '.
-        // When everything is ok you see a constant 'X'.
 
-        _draw_axis_label(X_AXIS, PSTR(MSG_X), blink);
-        lcd_put_u8str(ftostr4sign(LOGICAL_X_POSITION(current_position[X_AXIS])));
+        _draw_axis_value(X_AXIS, ftostr4sign(LOGICAL_X_POSITION(current_position[X_AXIS])), blink);
 
         lcd_put_wchar(' ');
 
-        _draw_axis_label(Y_AXIS, PSTR(MSG_Y), blink);
-        lcd_put_u8str(ftostr4sign(LOGICAL_Y_POSITION(current_position[Y_AXIS])));
+        _draw_axis_value(Y_AXIS, ftostr4sign(LOGICAL_Y_POSITION(current_position[Y_AXIS])), blink);
 
       #endif // HOTENDS <= 2 && (HOTENDS <= 1 || !TEMP_SENSOR_BED)
 
     #endif // LCD_WIDTH >= 20
 
     lcd_moveto(LCD_WIDTH - 8, 1);
-    _draw_axis_label(Z_AXIS, PSTR(MSG_Z), blink);
-    lcd_put_u8str(ftostr52sp(LOGICAL_Z_POSITION(current_position[Z_AXIS])));
+    _draw_axis_value(Z_AXIS, ftostr52sp(LOGICAL_Z_POSITION(current_position[Z_AXIS])), blink);
 
     #if HAS_LEVELING && !TEMP_SENSOR_BED
       lcd_put_wchar(planner.leveling_active || blink ? '_' : ' ');
@@ -1065,10 +1065,10 @@ static void lcd_implementation_status_screen() {
          * Show X and Y positions
          */
         _XLABEL(_PLOT_X, 0);
-        lcd_put_u8str(ftostr32(LOGICAL_X_POSITION(pgm_read_float(&ubl._mesh_index_to_xpos[x]))));
+        lcd_put_u8str(ftostr52(LOGICAL_X_POSITION(pgm_read_float(&ubl._mesh_index_to_xpos[x]))));
 
         _YLABEL(_LCD_W_POS, 0);
-        lcd_put_u8str(ftostr32(LOGICAL_Y_POSITION(pgm_read_float(&ubl._mesh_index_to_ypos[inverted_y]))));
+        lcd_put_u8str(ftostr52(LOGICAL_Y_POSITION(pgm_read_float(&ubl._mesh_index_to_ypos[inverted_y]))));
 
         lcd_moveto(_PLOT_X, 0);
 
@@ -1301,9 +1301,9 @@ static void lcd_implementation_status_screen() {
          * Show all values at right of screen
          */
         _XLABEL(_LCD_W_POS, 1);
-        lcd_put_u8str(ftostr32(LOGICAL_X_POSITION(pgm_read_float(&ubl._mesh_index_to_xpos[x]))));
+        lcd_put_u8str(ftostr52(LOGICAL_X_POSITION(pgm_read_float(&ubl._mesh_index_to_xpos[x]))));
         _YLABEL(_LCD_W_POS, 2);
-        lcd_put_u8str(ftostr32(LOGICAL_Y_POSITION(pgm_read_float(&ubl._mesh_index_to_ypos[inverted_y]))));
+        lcd_put_u8str(ftostr52(LOGICAL_Y_POSITION(pgm_read_float(&ubl._mesh_index_to_ypos[inverted_y]))));
 
         /**
          * Show the location value

@@ -41,7 +41,7 @@
   #include "../../../feature/bedlevel/bedlevel.h"
   #include "../../../libs/least_squares_fit.h"
 
-#include "../../../feature/Max7219_Debug_LEDs.h"
+  #include "../../../feature/Max7219_Debug_LEDs.h"
 
   #include <math.h>
 
@@ -797,7 +797,7 @@
 
       do_blocking_move_to(0.5 * (MESH_MAX_X - (MESH_MIN_X)), 0.5 * (MESH_MAX_Y - (MESH_MIN_Y)), in_height);
         //, min(planner.max_feedrate_mm_s[X_AXIS], planner.max_feedrate_mm_s[Y_AXIS]) / 2.0);
-      stepper.synchronize();
+      planner.synchronize();
 
       SERIAL_PROTOCOLPGM("Place shim under nozzle");
       LCD_MESSAGEPGM(MSG_UBL_BC_INSERT);
@@ -806,7 +806,7 @@
 
       const float z1 = measure_point_with_encoder();
       do_blocking_move_to_z(current_position[Z_AXIS] + SIZE_OF_LITTLE_RAISE);
-      stepper.synchronize();
+      planner.synchronize();
 
       SERIAL_PROTOCOLPGM("Remove shim");
       LCD_MESSAGEPGM(MSG_UBL_BC_REMOVE);
@@ -1495,6 +1495,8 @@
   }
 
   #if HAS_BED_PROBE
+
+    #include "../../../libs/vector_3.h"
 
     void unified_bed_leveling::tilt_mesh_based_on_probed_grid(const bool do_3_pt_leveling) {
       constexpr int16_t x_min = max(MIN_PROBE_X, MESH_MIN_X),

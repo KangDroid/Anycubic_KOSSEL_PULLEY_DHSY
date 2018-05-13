@@ -38,10 +38,6 @@
   #include "../feature/power.h"
 #endif
 
-#if ENABLED(PID_EXTRUSION_SCALING)
-  #include "stepper.h"
-#endif
-
 #ifndef SOFT_PWM_SCALE
   #define SOFT_PWM_SCALE 0
 #endif
@@ -50,23 +46,23 @@
  * States for ADC reading in the ISR
  */
 enum ADCSensorState : char {
-  #if HAS_TEMP_0
+  #if HAS_TEMP_ADC_0
     PrepareTemp_0,
     MeasureTemp_0,
   #endif
-  #if HAS_TEMP_1
+  #if HAS_TEMP_ADC_1
     PrepareTemp_1,
     MeasureTemp_1,
   #endif
-  #if HAS_TEMP_2
+  #if HAS_TEMP_ADC_2
     PrepareTemp_2,
     MeasureTemp_2,
   #endif
-  #if HAS_TEMP_3
+  #if HAS_TEMP_ADC_3
     PrepareTemp_3,
     MeasureTemp_3,
   #endif
-  #if HAS_TEMP_4
+  #if HAS_TEMP_ADC_4
     PrepareTemp_4,
     MeasureTemp_4,
   #endif
@@ -297,6 +293,10 @@ class Temperature {
     #if ENABLED(ADC_KEYPAD)
       static uint32_t current_ADCKey_raw;
       static uint8_t ADCKey_count;
+    #endif
+
+    #if ENABLED(PID_EXTRUSION_SCALING)
+      static int16_t lpq_len;
     #endif
 
     /**

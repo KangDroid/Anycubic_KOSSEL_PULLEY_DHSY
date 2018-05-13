@@ -125,7 +125,7 @@ void safe_delay(millis_t ms) {
   }
 
   // Convert signed float to fixed-length string with 023.45 / -23.45 format
-  char* ftostr32(const float &f) {
+  char* ftostr52(const float &f) {
     long i = (f * 1000 + (f < 0 ? -5: 5)) / 10;
     conv[1] = MINUSOR(i, DIGIMOD(i, 10000));
     conv[2] = DIGIMOD(i, 1000);
@@ -338,9 +338,9 @@ void safe_delay(millis_t ms) {
         #endif
         #if ABL_PLANAR
           const float diff[XYZ] = {
-            stepper.get_axis_position_mm(X_AXIS) - current_position[X_AXIS],
-            stepper.get_axis_position_mm(Y_AXIS) - current_position[Y_AXIS],
-            stepper.get_axis_position_mm(Z_AXIS) - current_position[Z_AXIS]
+            planner.get_axis_position_mm(X_AXIS) - current_position[X_AXIS],
+            planner.get_axis_position_mm(Y_AXIS) - current_position[Y_AXIS],
+            planner.get_axis_position_mm(Z_AXIS) - current_position[Z_AXIS]
           };
           SERIAL_ECHOPGM("ABL Adjustment X");
           if (diff[X_AXIS] > 0) SERIAL_CHAR('+');
