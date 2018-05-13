@@ -404,28 +404,25 @@ class Planner {
 
     #endif // SKEW_CORRECTION
 
-    #if PLANNER_LEVELING
-
-      #define ARG_X float rx
-      #define ARG_Y float ry
-      #define ARG_Z float rz
-
+    #if PLANNER_LEVELING || HAS_UBL_AND_CURVES
       /**
        * Apply leveling to transform a cartesian position
        * as it will be given to the planner and steppers.
        */
       static void apply_leveling(float &rx, float &ry, float &rz);
-      static void apply_leveling(float (&raw)[XYZ]) { apply_leveling(raw[X_AXIS], raw[Y_AXIS], raw[Z_AXIS]); }
+      FORCE_INLINE static void apply_leveling(float (&raw)[XYZ]) { apply_leveling(raw[X_AXIS], raw[Y_AXIS], raw[Z_AXIS]); }
+    #endif
+
+    #if PLANNER_LEVELING
+      #define ARG_X float rx
+      #define ARG_Y float ry
+      #define ARG_Z float rz
       static void unapply_leveling(float raw[XYZ]);
-
     #else
-
       #define ARG_X const float &rx
       #define ARG_Y const float &ry
       #define ARG_Z const float &rz
-
     #endif
-
 
     /**
      * Planner::get_next_free_block
@@ -550,9 +547,25 @@ class Planner {
     static void sync_from_steppers();
 
     /**
+     * Get an axis position according to stepper position(s)
+     * For CORE machines apply translation from ABC to XYZ.
+     */
+    static float get_axis_position_mm(const AxisEnum axis);
+
+    // SCARA AB axes are in degrees, not mm
+    #if IS_SCARA
+      FORCE_INLINE static float get_axis_position_degrees(const AxisEnum axis) { return get_axis_position_mm(axis); }
+    #endif
+
+    /**
      * Does the buffer have any blocks queued?
      */
     FORCE_INLINE static bool has_blocks_queued() { return (block_buffer_head != block_buffer_tail); }
+
+    //
+    // Block until all buffered steps are executed
+    //
+    static void synchronize();
 
     /**
      * "Discard" the block and "release" the memory.
