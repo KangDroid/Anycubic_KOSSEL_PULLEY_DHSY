@@ -850,7 +850,7 @@ void setup() {
 	
   SetUpFAN2_PIN();
   lcd_init();
-  LCD_MESSAGEPGM(WELCOME_MSG);
+  lcd_reset_status();
 
   #if ENABLED(SHOW_BOOTSCREEN)
     lcd_bootscreen();
