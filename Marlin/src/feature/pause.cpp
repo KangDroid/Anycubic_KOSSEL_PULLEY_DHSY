@@ -382,6 +382,8 @@ bool pause_print(const float &retract, const point_t &park_point, const float &u
       // Park the nozzle by moving up by z_lift and then moving to (x_pos, y_pos)
       Nozzle::park(2, park_point);
 
+   do_pause_e_move(FILAMENT_CHANGE_SLOW_LOAD_LENGTH, FILAMENT_CHANGE_SLOW_LOAD_FEEDRATE);
+
   // Unload the filament
   if (unload_length)
     unload_filament(unload_length, show_lcd);
