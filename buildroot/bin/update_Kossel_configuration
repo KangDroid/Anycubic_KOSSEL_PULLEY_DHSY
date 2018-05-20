@@ -43,6 +43,9 @@ opt_enable REPRAP_DISCOUNT_SMART_CONTROLLER
 opt_set_adv Z_HOME_BUMP_MM 5
 opt_set_adv HOMING_BUMP_DIVISOR "{ 10, 10, 10 }"
 opt_set_adv MANUAL_FEEDRATE "{50*60, 50*60, 50*60, 60}"
+opt_set_adv THERMAL_PROTECTION_PERIOD 120
+opt_set_adv THERMAL_PROTECTION_HYSTERESIS 10
+opt_set_adv WATCH_TEMP_PERIOD 80
 opt_disable_adv SLOWDOWN
 opt_enable EMERGENCY_PARSER
 cp Marlin/Configuration* Marlin/src/config/examples/Kossel/
