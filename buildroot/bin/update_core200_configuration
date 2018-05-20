@@ -1,0 +1,39 @@
+#!/bin/sh
+opt_set TEMP_SENSOR_BED 4
+opt_set HEATER_0_MAXTEMP 250
+opt_enable PID_AUTOTUNE_MENU
+opt_set DEFAULT_Kp 23.29
+opt_set DEFAULT_Ki 1.82
+opt_set DEFAULT_Kd 74.42
+opt_set EXTRUDE_MINTEMP 195
+opt_enable COREXY
+opt_set Y_MIN_ENDSTOP_INVERTING "true"
+opt_set DEFAULT_AXIS_STEPS_PER_UNIT "{ 80, 80, 800, 93 }"
+opt_set DEFAULT_MAX_FEEDRATE "{ 500, 500, 5, 25 }"
+opt_set DEFAULT_MAX_ACCELERATION "{ 9000, 9000, 100, 10000 }"
+opt_set DEFAULT_ACCELERATION 400
+opt_set DEFAULT_RETRACT_ACCELERATION 300
+opt_set DEFAULT_TRAVEL_ACCELERATION 400
+opt_set DEFAULT_XJERK 15.0
+opt_set DEFAULT_YJERK 15.0
+opt_set DEFAULT_ZJERK 0.4
+opt_enable FIX_MOUNTED_PROBE
+opt_set INVERT_Y_DIR "false"
+opt_set INVERT_E0_DIR "true"
+opt_enable SOFT_ENDSTOPS_MENU_ITEM
+#opt_enable PIDTEMPBED
+opt_enable MESH_BED_LEVELING
+opt_enable LCD_BED_LEVELING
+opt_enable Z_SAFE_HOMING
+opt_enable EEPROM_SETTINGS
+opt_set PREHEAT_1_TEMP_HOTEND 200
+opt_set PREHEAT_1_TEMP_BED 50
+opt_enable NOZZLE_PARK_FEATURE
+opt_enable SDSUPPORT
+opt_enable INDIVIDUAL_AXIS_HOMING_MENU
+opt_enable REPRAP_DISCOUNT_SMART_CONTROLLER
+opt_enable_adv EMERGENCY_PARSER
+opt_enable_adv ADVANCED_PAUSE_FEATURE
+
+cp Marlin/Configuration* Marlin/src/config/examples/Core200/
+restore_configs

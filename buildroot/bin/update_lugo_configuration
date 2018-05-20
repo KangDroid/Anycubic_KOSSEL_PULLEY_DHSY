@@ -1,0 +1,57 @@
+#!/bin/bash
+opt_set MOTHERBOARD BOARD_MKS_GEN_13
+opt_set POWER_SUPPLY 1
+opt_set TEMP_SENSOR_BED 1
+opt_set DEFAULT_Kp 15.98
+opt_set DEFAULT_Ki 1.2
+opt_set DEFAULT_Kd 53.02
+opt_set DEFAULT_bedKp 10.00
+opt_set DEFAULT_bedKi 5
+opt_set DEFAULT_bedKd 176.85
+opt_set EXTRUDE_MINTEMP 185
+opt_set EXTRUDE_MAXLENGTH 1000
+opt_disable USE_XMIN_PLUG
+opt_disable USE_YMIN_PLUG
+opt_disable USE_ZMIN_PLUG
+opt_enable USE_XMAX_PLUG
+opt_enable USE_YMAX_PLUG
+opt_enable USE_ZMAX_PLUG
+opt_set DEFAULT_AXIS_STEPS_PER_UNIT "{100,100,400,303}"
+opt_set DEFAULT_MAX_FEEDRATE "{250, 250, 9, 110}"
+opt_set DEFAULT_MAX_ACCELERATION "{1000,1000,200,1000}"
+opt_set DEFAULT_ACCELERATION 1000
+opt_set DEFAULT_RETRACT_ACCELERATION 1000
+opt_set DEFAULT_TRAVEL_ACCELERATION 1300
+opt_set DEFAULT_XJERK 20.0
+opt_set DEFAULT_YJERK 20.0
+opt_set DEFAULT_ZJERK 0.5
+opt_disable Z_MIN_PROBE_USES_Z_MIN_ENDSTOP_PIN
+opt_set X_PROBE_OFFSET_FROM_EXTRUDER 0
+opt_set Y_PROBE_OFFSET_FROM_EXTRUDER 0
+opt_set INVERT_Z_DIR "true"
+opt_set X_HOME_DIR 1
+opt_set Y_HOME_DIR 1
+opt_set Z_HOME_DIR 1
+opt_set X_BED_SIZE 215
+opt_set Y_BED_SIZE 215
+opt_set Z_MAX_POS 205
+opt_set HOMING_FEEDRATE_Z "(250)"
+opt_enable MESH_BED_LEVELING
+opt_enable LCD_BED_LEVELING
+opt_enable EEPROM_SETTINGS
+opt_enable NOZZLE_PARK_FEATURE
+opt_enable SDSUPPORT
+#opt_enable SD_CHECK_AND_RETRY
+opt_enable MINIPANEL
+opt_enable_adv ADVANCED_PAUSE_FEATURE
+opt_set_adv FILAMENT_CHANGE_SLOW_LOAD_LENGTH 50
+opt_set_adv FILAMENT_CHANGE_UNLOAD_LENGTH 740
+opt_set_adv FILAMENT_CHANGE_FAST_LOAD_LENGTH 750
+#pins_set RAMPS BEEPER_PIN 37
+#pins_set RAMPS DOGLCD_A0 27
+#pins_set RAMPS DOGLCD_CS 25
+#pins_set RAMPS BTN_EN1 31
+#pins_set RAMPS BTN_EN2 33
+#pins_set RAMPS BTN_ENC 35
+cp Marlin/Configuration* Marlin/src/config/examples/Lugo_M/
+restore_configs

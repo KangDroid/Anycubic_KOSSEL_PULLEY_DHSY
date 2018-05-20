@@ -1,0 +1,40 @@
+#!/bin/bash
+opt_set TEMP_SENSOR_BED 1
+opt_enable PID_AUTOTUNE_MENU
+opt_disable USE_ZMIN_PLUG
+opt_enable USE_ZMAX_PLUG
+opt_set X_MIN_ENDSTOP_INVERTING "true"
+opt_set Y_MIN_ENDSTOP_INVERTING "true"
+opt_set Z_MIN_ENDSTOP_INVERTING "true"
+opt_set Z_MAX_ENDSTOP_INVERTING "true"
+opt_set DEFAULT_AXIS_STEPS_PER_UNIT "{ 80, 80, 400, 98.90 }"
+opt_set DEFAULT_MAX_FEEDRATE "{ 500, 500, 3, 25 }"
+opt_set DEFAULT_ACCELERATION 500
+opt_set DEFAULT_TRAVEL_ACCELERATION 500
+opt_set DEFAULT_XJERK "20.0"
+opt_set DEFAULT_YJERK "20.0"
+opt_set DEFAULT_ZJERK "0.4"
+opt_set INVERT_E0_DIR "true"
+opt_set Z_HOME_DIR 1
+opt_set Z_MAX_POS 186
+opt_enable MESH_BED_LEVELING
+opt_enable LCD_BED_LEVELING
+opt_enable EEPROM_SETTINGS
+#opt_enable PIDTEMPBED
+opt_set PREHEAT_1_TEMP_HOTEND 200
+opt_set PREHEAT_1_TEMP_BED 50
+opt_enable NOZZLE_PARK_FEATURE
+opt_enable SDSUPPORT
+opt_enable INDIVIDUAL_AXIS_HOMING_MENU
+opt_enable REPRAP_DISCOUNT_SMART_CONTROLLER
+opt_enable SPEAKER
+opt_disable LCD_FEEDBACK_FREQUENCY_DURATION_MS
+opt_disable LCD_FEEDBACK_FREQUENCY_HZ
+opt_set_adv THERMAL_PROTECTION_PERIOD 60
+opt_set_adv THERMAL_PROTECTION_HYSTERESIS 20
+opt_set_adv WATCH_TEMP_PERIOD 40
+opt_enable_adv EMERGENCY_PARSER
+opt_enable_adv ADVANCED_PAUSE_FEATURE
+
+cp Marlin/Configuration* Marlin/src/config/examples/SlideFast/
+restore_configs

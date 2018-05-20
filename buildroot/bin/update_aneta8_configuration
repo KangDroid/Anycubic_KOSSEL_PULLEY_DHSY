@@ -1,0 +1,27 @@
+#!/bin/sh
+opt_set MOTHERBOARD BOARD_MKS_GEN_13
+opt_set TEMP_SENSOR_0 5
+opt_set TEMP_SENSOR_BED 5
+opt_set X_MIN_ENDSTOP_INVERTING "true"
+opt_set Y_MIN_ENDSTOP_INVERTING "true"
+opt_set Z_MIN_ENDSTOP_INVERTING "true"
+opt_set DEFAULT_AXIS_STEPS_PER_UNIT "{ 100, 100, 400, 100 }"
+opt_set DEFAULT_MAX_FEEDRATE "{ 400, 400, 8, 50 }"
+opt_set DEFAULT_MAX_ACCELERATION "{ 2000, 2000, 100, 10000 }"
+opt_set DEFAULT_ACCELERATION 400
+opt_set DEFAULT_RETRACT_ACCELERATION 1000
+opt_set DEFAULT_TRAVEL_ACCELERATION 100
+opt_set X_PROBE_OFFSET_FROM_EXTRUDER 0
+opt_set Y_PROBE_OFFSET_FROM_EXTRUDER 0
+opt_set XY_PROBE_SPEED 6000
+opt_set INVERT_Y_DIR "false"
+opt_set INVERT_Z_DIR "true"
+opt_set X_BED_SIZE "220"
+opt_set Y_BED_SIZE "220"
+opt_set X_MIN_POS "-33"
+opt_set Y_MIN_POS "-10"
+opt_set Z_MAX_POS 240
+opt_set HOMING_FEEDRATE_XY "(100*60)"
+opt_enable_adv Z_DUAL_STEPPER_DRIVERS
+cp Marlin/Configuration* Marlin/src/config/examples/AnetA8/
+restore_configs
