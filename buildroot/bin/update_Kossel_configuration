@@ -1,5 +1,6 @@
 #!/bin/bash
 use_example_configs delta/generic
+opt_set MOTHERBOARD BOARD_MKS_GEN_13
 opt_set DEFAULT_NOMINAL_FILAMENT_DIA 1.75
 opt_set TEMP_SENSOR_0 5
 opt_enable PID_AUTOTUNE_MENU
