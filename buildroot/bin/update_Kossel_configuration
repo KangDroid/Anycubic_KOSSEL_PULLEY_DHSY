@@ -29,10 +29,10 @@ opt_set Y_PROBE_OFFSET_FROM_EXTRUDER 0
 opt_set Z_PROBE_OFFSET_FROM_EXTRUDER "-19.6"
 opt_set Z_PROBE_OFFSET_RANGE_MAX 60
 opt_set Z_PROBE_OFFSET_RANGE_MIN -60
-opt_set INVERT_X_DIR "true"
-opt_set INVERT_Y_DIR "true"
-opt_set INVERT_Z_DIR "true"
-opt_set INVERT_E0_DIR "true"
+opt_set INVERT_X_DIR "false"
+opt_set INVERT_Y_DIR "false"
+opt_set INVERT_Z_DIR "false"
+opt_set INVERT_E0_DIR "false"
 opt_enable SOFT_ENDSTOPS_MENU_ITEM
 opt_enable EEPROM_SETTINGS
 opt_set PREHEAT_1_TEMP_HOTEND 200
