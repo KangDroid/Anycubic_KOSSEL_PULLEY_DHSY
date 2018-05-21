@@ -230,10 +230,6 @@
 //
 // Heaters / Fans
 //
-#if ENABLED(DHSY_KOSSEL_FAN)
-#define FAN2_PIN   -1 // 44
-#define KosselFAN2_PIN 44
-#endif
 #ifndef MOSFET_D_PIN
   #define MOSFET_D_PIN  -1
 #endif

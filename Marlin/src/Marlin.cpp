@@ -624,19 +624,6 @@ void stop() {
     Running = false;
   }
 }
-#if ENABLED(DHSY_KOSSEL_FAN)
-void SetUpFAN2_PIN()
-{
-    SET_OUTPUT(KosselFAN2_PIN);
-    WRITE(KosselFAN2_PIN, LOW);  
-}
-void Fan2Scan()
-{
-  if(thermalManager.degHotend(0)>60)
-  WRITE(KosselFAN2_PIN, HIGH);
-  else WRITE(KosselFAN2_PIN, LOW);
-}
-#endif
 
 /**
  * Marlin entry-point: Set up before the program loop
@@ -846,10 +833,6 @@ void setup() {
   #if HAS_FANMUX
     fanmux_init();
   #endif
-	
-	#if ENABLED(DHSY_KOSSEL_FAN)
-  SetUpFAN2_PIN();
-#endif
 
   lcd_init();
   lcd_reset_status();
@@ -911,9 +894,6 @@ void loop() {
     #if ENABLED(SDSUPPORT)
       card.checkautostart();
     #endif
-	  #if ENABLED(DHSY_KOSSEL_FAN)
-	  Fan2Scan();
-#endif
 
     #if ENABLED(SDSUPPORT) && ENABLED(ULTIPANEL)
       if (abort_sd_printing) {
