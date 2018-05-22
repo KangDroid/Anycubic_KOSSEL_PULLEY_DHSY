@@ -342,6 +342,42 @@ script:
   - opt_enable_adv HAVE_TMC2208 X_IS_TMC2208 Y_IS_TMC2208 Z_IS_TMC2208
   - opt_enable_adv MONITOR_DRIVER_STATUS STEALTHCHOP HYBRID_THRESHOLD TMC_DEBUG
   - build_marlin_pio ${TRAVIS_BUILD_DIR} ${TEST_PLATFORM}
+  
+  ##################################
+  # DHSY Printer Configuration Test
+  ##################################
+  
+  #
+  # Kossel Configuration Test
+  #
+  - restore_configs
+  - use_example_configs Kossel
+  - build_marlin_pio ${TRAVIS_BUILD_DIR} ${TEST_PLATFORM}
+  #
+  # Lugo-M Configuration Test
+  #
+  - restore_configs
+  - use_example_configs Lugo_M
+  - build_marlin_pio ${TRAVIS_BUILD_DIR} ${TEST_PLATFORM}
+  #
+  # Core200 Configuration Test
+  #
+  - restore_configs
+  - use_example_configs Core200
+  - build_marlin_pio ${TRAVIS_BUILD_DIR} ${TEST_PLATFORM}
+  #
+  # SlideFast Configuration Test
+  #
+  - restore_configs
+  - use_example_configs SlideFast
+  - build_marlin_pio ${TRAVIS_BUILD_DIR} ${TEST_PLATFORM}
+  #
+  # AnetA8 Configuration Test
+  #
+  - restore_configs
+  - use_example_configs AnetA8
+  - build_marlin_pio ${TRAVIS_BUILD_DIR} ${TEST_PLATFORM}
+  
   #
   # tvrrug Config need to check board type for sanguino atmega644p
   #
