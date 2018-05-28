@@ -16,7 +16,7 @@ opt_set DEFAULT_YJERK "20.0"
 opt_set DEFAULT_ZJERK "0.4"
 opt_set INVERT_E0_DIR "true"
 opt_set Z_HOME_DIR 1
-opt_set Z_MAX_POS 186
+opt_set Z_MAX_POS 187.5
 opt_enable MESH_BED_LEVELING
 opt_enable LCD_BED_LEVELING
 opt_enable EEPROM_SETTINGS
