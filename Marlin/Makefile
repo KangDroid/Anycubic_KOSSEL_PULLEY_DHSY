@@ -74,7 +74,7 @@ AVR_TOOLS_PATH = /Users/kangdroid/.platformio/packages/toolchain-atmelavr/bin/
 UPLOAD_RATE        ?= 57600
 AVRDUDE_PROGRAMMER ?= arduino
 # on most linuxes this will be /dev/ttyACM0 or /dev/ttyACM1
-UPLOAD_PORT        ?= /dev/ttyUSB0
+UPLOAD_PORT        ?= /dev/cu.usbmodem1421
 
 #Directory used to build files in, contains all the build files, from object files to the final hex file
 #on linux it is best to put an absolute path like /home/username/tmp .
@@ -552,8 +552,8 @@ OPT = s
 DEFINES ?=
 
 # Program settings
-CC = $(AVR_TOOLS_PATH)avr-gcc
-CXX = $(AVR_TOOLS_PATH)avr-g++
+CC = "ccache $(AVR_TOOLS_PATH)avr-gcc"
+CXX = "ccache $(AVR_TOOLS_PATH)avr-g++"
 OBJCOPY = $(AVR_TOOLS_PATH)avr-objcopy
 OBJDUMP = $(AVR_TOOLS_PATH)avr-objdump
 AR  = $(AVR_TOOLS_PATH)avr-ar
