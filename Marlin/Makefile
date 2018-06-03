@@ -57,18 +57,18 @@
 #
 
 # This defines the board to compile for (see boards.h for your board's ID)
-HARDWARE_MOTHERBOARD ?= 11
+HARDWARE_MOTHERBOARD ?= 33
 
 # Arduino source install directory, and version number
 # On most linuxes this will be /usr/share/arduino
-ARDUINO_INSTALL_DIR  ?= ${HOME}/Arduino
+ARDUINO_INSTALL_DIR  ?= /Applications/Arduino.app/Contents/Resources/Java
 ARDUINO_VERSION      ?= 106
 
 # The installed Libraries are in the User folder
-ARDUINO_USER_DIR ?= ${HOME}/Arduino
+ARDUINO_USER_DIR ?= /Users/kangdroid/Documents/Arduino/libraries 
 
 # You can optionally set a path to the avr-gcc tools. Requires a trailing slash. (ex: /usr/local/avr-gcc/bin)
-AVR_TOOLS_PATH ?=
+AVR_TOOLS_PATH = /Users/kangdroid/.platformio/packages/toolchain-atmelavr/bin/
 
 #Programmer configuration
 UPLOAD_RATE        ?= 57600
@@ -90,7 +90,7 @@ WIRE               ?= 0
 U8GLIB             ?= 1
 
 # this defines whether to include the Trinamic TMC2630Stepper
-TMC2630            ?= 1
+TMC2630            ?= 0
 
 ############
 # Try to automatically determine whether RELOC_WORKAROUND is needed based
@@ -101,10 +101,10 @@ CC_MAJ:=$(shell $(CC) -dM -E - < /dev/null | grep __GNUC__ | cut -f3 -d\ )
 CC_MIN:=$(shell $(CC) -dM -E - < /dev/null | grep __GNUC_MINOR__ | cut -f3 -d\ )
 CC_PATCHLEVEL:=$(shell $(CC) -dM -E - < /dev/null | grep __GNUC_PATCHLEVEL__ | cut -f3 -d\ )
 CC_VER:=$(shell echo $$(( $(CC_MAJ) * 10000 + $(CC_MIN) * 100 + $(CC_PATCHLEVEL) )))
-ifeq ($(shell test $(CC_VER) -lt 40901 && echo 1),1)
-  @echo This version of GCC is likely broken. Enabling relocation workaround.
-	RELOC_WORKAROUND = 1
-endif
+#ifeq ($(shell test $(CC_VER) -lt 40901 && echo 1),1)
+#  @echo "This version of GCC is likely broken. Enabling relocation workaround."
+#	RELOC_WORKAROUND = 1
+#endif
 
 ############################################################################
 # Below here nothing should be changed...
@@ -437,6 +437,14 @@ VPATH += $(HARDWARE_SRC)
 # U8glib
 VPATH += $(ARDUINO_USER_DIR)/libraries/U8glib
 VPATH += $(ARDUINO_USER_DIR)/libraries/U8glib/clib
+
+# KD Edition
+VPATH += /Applications/Arduino.app/Contents/Java/hardware/arduino/avr/libraries/SPI/src/
+VPATH += /Applications/Arduino.app/Contents/Java/libraries/LiquidCrystal/src/
+VPATH += /Users/kangdroid/Documents/Arduino/libraries/U8glib
+VPATH += /Applications/Arduino.app/Contents/Java/hardware/arduino/avr/cores/arduino
+VPATH += /Applications/Arduino.app/Contents/Java/hardware/arduino/avr/variants/mega
+VPATH += /Users/kangdroid/Documents/Arduino/libraries/U8glib/utility
 
 ifeq ($(HARDWARE_VARIANT), $(filter $(HARDWARE_VARIANT),arduino Teensy Sanguino))
 VPATH += $(ARDUINO_INSTALL_DIR)/hardware/marlin/avr/libraries/LiquidCrystal/src
