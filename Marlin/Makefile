@@ -71,8 +71,8 @@ ARDUINO_USER_DIR ?= /Users/kangdroid/Documents/Arduino/libraries
 AVR_TOOLS_PATH = /Users/kangdroid/.platformio/packages/toolchain-atmelavr/bin/
 
 #Programmer configuration
-UPLOAD_RATE        ?= 57600
-AVRDUDE_PROGRAMMER ?= arduino
+UPLOAD_RATE        ?= 115200
+AVRDUDE_PROGRAMMER ?= wiring
 # on most linuxes this will be /dev/ttyACM0 or /dev/ttyACM1
 UPLOAD_PORT        ?= /dev/cu.usbmodem1421
 
@@ -518,7 +518,8 @@ endif
 
 ifeq ($(U8GLIB), 1)
 LIB_CXXSRC += U8glib.cpp
-LIB_SRC += u8g_ll_api.c u8g_bitmap.c u8g_clip.c u8g_com_null.c u8g_delay.c u8g_page.c u8g_pb.c u8g_pb16h1.c u8g_rect.c u8g_state.c u8g_font.c u8g_font_data.c
+LIB_SRC += chessengine.c u8g_bitmap.c u8g_circle.c u8g_clip.c u8g_com_api.c u8g_com_api_16gr.c u8g_com_arduino_attiny85_hw_spi.c u8g_com_arduino_common.c u8g_com_arduino_fast_parallel.c u8g_com_arduino_hw_spi.c u8g_com_arduino_hw_usart_spi.c u8g_com_arduino_no_en_parallel.c u8g_com_arduino_parallel.c u8g_com_arduino_port_d_wr.c u8g_com_arduino_ssd_i2c.c u8g_com_arduino_st7920_custom.c u8g_com_arduino_st7920_hw_spi.c u8g_com_arduino_st7920_spi.c u8g_com_arduino_std_sw_spi.c u8g_com_arduino_sw_spi.c u8g_com_arduino_t6963.c u8g_com_arduino_uc_i2c.c u8g_com_atmega_hw_spi.c u8g_com_atmega_parallel.c u8g_com_atmega_st7920_hw_spi.c u8g_com_atmega_st7920_spi.c u8g_com_atmega_sw_spi.c u8g_com_i2c.c u8g_com_io.c u8g_com_msp430_hw_spi.c u8g_com_null.c u8g_com_raspberrypi_hw_spi.c u8g_com_raspberrypi_ssd_i2c.c u8g_com_std_sw_spi.c u8g_cursor.c u8g_delay.c u8g_dev_a2_micro_printer.c u8g_dev_flipdisc_2x7.c u8g_dev_gprof.c u8g_dev_ht1632.c u8g_dev_ili9325d_320x240.c u8g_dev_ks0108_128x64.c u8g_dev_lc7981_160x80.c u8g_dev_lc7981_240x128.c u8g_dev_lc7981_240x64.c u8g_dev_lc7981_320x64.c u8g_dev_ld7032_60x32.c u8g_dev_null.c u8g_dev_pcd8544_84x48.c u8g_dev_pcf8812_96x65.c u8g_dev_sbn1661_122x32.c u8g_dev_ssd1306_128x32.c u8g_dev_ssd1306_128x64.c u8g_dev_ssd1306_64x48.c u8g_dev_ssd1309_128x64.c u8g_dev_ssd1322_nhd31oled_bw.c u8g_dev_ssd1322_nhd31oled_gr.c u8g_dev_ssd1325_nhd27oled_bw.c u8g_dev_ssd1325_nhd27oled_bw_new.c u8g_dev_ssd1325_nhd27oled_gr.c u8g_dev_ssd1325_nhd27oled_gr_new.c u8g_dev_ssd1327_96x96_gr.c u8g_dev_ssd1351_128x128.c u8g_dev_ssd1353_160x128.c u8g_dev_st7565_64128n.c u8g_dev_st7565_dogm128.c u8g_dev_st7565_dogm132.c u8g_dev_st7565_lm6059.c u8g_dev_st7565_lm6063.c u8g_dev_st7565_nhd_c12832.c u8g_dev_st7565_nhd_c12864.c u8g_dev_st7687_c144mvgd.c u8g_dev_st7920_128x64.c u8g_dev_st7920_192x32.c u8g_dev_st7920_202x32.c u8g_dev_t6963_128x128.c u8g_dev_t6963_128x64.c u8g_dev_t6963_240x128.c u8g_dev_t6963_240x64.c u8g_dev_tls8204_84x48.c u8g_dev_uc1601_c128032.c u8g_dev_uc1608_240x128.c u8g_dev_uc1608_240x64.c u8g_dev_uc1610_dogxl160.c u8g_dev_uc1611_dogm240.c u8g_dev_uc1611_dogxl240.c u8g_dev_uc1701_dogs102.c u8g_dev_uc1701_mini12864.c u8g_ellipse.c u8g_font.c u8g_font_data.c u8g_line.c u8g_ll_api.c u8g_page.c u8g_pb.c u8g_pb14v1.c u8g_pb16h1.c u8g_pb16h2.c u8g_pb16v1.c u8g_pb16v2.c u8g_pb32h1.c u8g_pb8h1.c u8g_pb8h1f.c u8g_pb8h2.c u8g_pb8h8.c u8g_pb8v1.c u8g_pb8v2.c u8g_pbxh16.c u8g_pbxh24.c u8g_polygon.c u8g_rect.c u8g_rot.c u8g_scale.c u8g_state.c u8g_u16toa.c u8g_u8toa.c u8g_virtual_screen.c
+#LIB_SRC += u8g_ll_api.c u8g_bitmap.c u8g_clip.c u8g_com_null.c u8g_delay.c u8g_page.c u8g_pb.c u8g_pb16h1.c u8g_rect.c u8g_state.c u8g_font.c u8g_font_data.c u8g_dev_uc1701_mini12864.c
 endif
 
 ifeq ($(TMC2630), 1)
@@ -552,8 +553,8 @@ OPT = s
 DEFINES ?=
 
 # Program settings
-CC = "ccache $(AVR_TOOLS_PATH)avr-gcc"
-CXX = "ccache $(AVR_TOOLS_PATH)avr-g++"
+CC = ccache $(AVR_TOOLS_PATH)avr-gcc
+CXX = ccache $(AVR_TOOLS_PATH)avr-g++
 OBJCOPY = $(AVR_TOOLS_PATH)avr-objcopy
 OBJDUMP = $(AVR_TOOLS_PATH)avr-objdump
 AR  = $(AVR_TOOLS_PATH)avr-ar
@@ -584,7 +585,6 @@ CDEBUG = -g$(DEBUG)
 CWARN = -Wall -Wstrict-prototypes
 CTUNING = -funsigned-char -funsigned-bitfields -fpack-struct \
 	-fshort-enums -w -ffunction-sections -fdata-sections \
-	-flto \
 	-DARDUINO=$(ARDUINO_VERSION)
 ifneq ($(HARDWARE_MOTHERBOARD),)
 CTUNING += -DMOTHERBOARD=${HARDWARE_MOTHERBOARD}
@@ -595,7 +595,7 @@ CEXTRA = -fno-use-cxa-atexit -fno-threadsafe-statics
 CFLAGS := $(CDEBUG) $(CDEFS) $(CINCS) -O$(OPT) $(CWARN) $(CEXTRA) $(CTUNING) $(CSTANDARD)
 CXXFLAGS :=         $(CDEFS) $(CINCS) -O$(OPT) -Wall    $(CEXTRA) $(CTUNING) $(CXXSTANDARD)
 #ASFLAGS = -Wa,-adhlns=$(<:.S=.lst),-gstabs
-LDFLAGS = -lm
+LDFLAGS = -lm -flto
 
 
 # Programming support using avrdude. Settings and variables.
@@ -604,7 +604,7 @@ AVRDUDE_WRITE_FLASH = -Uflash:w:$(BUILD_DIR)/$(TARGET).hex:i
 ifeq ($(shell uname -s), Linux)
 AVRDUDE_CONF = /etc/avrdude/avrdude.conf
 else
-AVRDUDE_CONF = $(ARDUINO_INSTALL_DIR)/hardware/tools/avr/etc/avrdude.conf
+AVRDUDE_CONF = /Applications/Arduino.app/Contents/Java/hardware/tools/avr/etc/avrdude.conf
 endif
 AVRDUDE_FLAGS = -D -C$(AVRDUDE_CONF) \
 	-p$(MCU) -P$(AVRDUDE_PORT) -c$(AVRDUDE_PROGRAMMER) \
