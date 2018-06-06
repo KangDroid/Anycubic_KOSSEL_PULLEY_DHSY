@@ -193,6 +193,18 @@
 #ifndef MSG_EDITING_STOPPED
   #define MSG_EDITING_STOPPED                 _UxGT("Mesh Editing Stopped")
 #endif
+#ifndef MSG_MBL_EDIT_MESH
+  #define MSG_MBL_EDIT_MESH                   _UxGT("Edit Mesh")
+#endif
+#ifndef MSG_MBL_X
+  #define MSG_MBL_X                           _UxGT("Index X")
+#endif
+#ifndef MSG_MBL_Y
+  #define MSG_MBL_Y                           _UxGT("Index Y")
+#endif
+#ifndef MSG_MBL_EDIT_Z
+  #define MSG_MBL_EDIT_Z                      _UxGT("Z Value")
+#endif
 #ifndef MSG_USER_MENU
   #define MSG_USER_MENU                       _UxGT("Custom Commands")
 #endif
