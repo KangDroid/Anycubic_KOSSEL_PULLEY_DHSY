@@ -394,7 +394,7 @@ bool pause_print(const float &retract, const point_t &park_point, const float &u
     extruder_duplication_enabled = false;
   #endif
 
-  do_pause_e_move(FILAMENT_CHANGE_SLOW_LOAD_LENGTH, FILAMENT_CHANGE_SLOW_LOAD_FEEDRATE);
+  do_pause_e_move(10, FILAMENT_CHANGE_SLOW_LOAD_FEEDRATE);
 
   if (unload_length)   // Unload the filament
     unload_filament(unload_length, show_lcd);
