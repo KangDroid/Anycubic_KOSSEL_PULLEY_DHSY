@@ -725,6 +725,7 @@ private:
   static void M500();
   static void M501();
   static void M502();
+  static void M980();
   #if DISABLED(DISABLE_M503)
     static void M503();
   #endif

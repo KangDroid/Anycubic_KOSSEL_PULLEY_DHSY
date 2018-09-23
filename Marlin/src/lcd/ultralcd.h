@@ -492,12 +492,15 @@ public:
       static inline void encoder_direction_normal() {}
       static inline void encoder_direction_menus()  {}
     #endif
-
   #else
 
     static inline void update_buttons() {}
 
   #endif
+	
+#if ENABLED(SDSUPPORT) && ENABLED(SDSECURE)
+  extern bool enable_sdcard;
+#endif
 
 private:
 

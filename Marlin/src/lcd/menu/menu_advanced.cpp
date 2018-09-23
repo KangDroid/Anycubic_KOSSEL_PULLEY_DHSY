@@ -46,6 +46,21 @@
   #include "../../module/temperature.h"
 #endif
 
+#if ENABLED(SDSECURE)
+  uint8_t pass;
+  static void update_value() {
+	  if (pass == 10) {
+	  	enqueue_and_echo_commands_P(PSTR("M980 S705"));
+		// Flush Pass away by putting zeros on pass.
+		pass = 0;
+	  } else if(pass != 10) {
+		// Beep, You've got wrong password, Reset SD Status!
+		enqueue_and_echo_commands_P(PSTR("M980 S0"));
+		pass = 0;
+	  }
+  }
+#endif
+
 #if HAS_M206_COMMAND
   //
   // Set the home offset based on the current_position
@@ -562,6 +577,13 @@ void menu_advanced_settings() {
     MENU_ITEM(submenu, MSG_ZPROBE_ZOFFSET, lcd_babystep_zoffset);
   #elif HAS_BED_PROBE
     MENU_ITEM_EDIT(float52, MSG_ZPROBE_ZOFFSET, &zprobe_zoffset, Z_PROBE_OFFSET_RANGE_MIN, Z_PROBE_OFFSET_RANGE_MAX);
+  #endif
+
+  #if ENABLED(SDSECURE)
+	//MENU_ITEM_EDIT_CALLBACK(bool, MSG_BED_LEVELING, &new_level_state, _lcd_toggle_bed_leveling);
+	//MENU_ITEM_EDIT_CALLBACK(int8, MSG_CASE_LIGHT_BRIGHTNESS, &case_light_brightness, 0, 255, update_case_light, true);
+	//MENU_ITEM_EDIT_CALLBACK(int3, MSG_FLOW, &planner.flow_percentage[0], 10, 999, _lcd_refresh_e_factor_0);
+	MENU_ITEM_EDIT_CALLBACK(int8, MSG_ENTER_PASS, &pass, 0, 255, update_value);
   #endif
 
   #if DISABLED(SLIM_LCD_MENUS)
