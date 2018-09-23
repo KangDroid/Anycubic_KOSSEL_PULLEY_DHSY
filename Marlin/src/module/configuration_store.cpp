@@ -273,6 +273,8 @@ typedef struct SettingsDataStruct {
   // ADVANCED_PAUSE_FEATURE
   //
   fil_change_settings_t fc_settings[EXTRUDERS];         // M603 T U L
+  
+  uint8_t password_for_store;
 
   //
   // Tool-change settings
@@ -456,6 +458,13 @@ void MarlinSettings::postprocess() {
 
     const uint8_t esteppers = COUNT(planner.settings.axis_steps_per_mm) - XYZ;
     EEPROM_WRITE(esteppers);
+	
+    #if ENABLED(SDSECURE)
+	  EEPROM_WRITE(password_for_store);
+    #else
+	  const uint8_t dummy_password;
+	  EEPROM_WRITE(dummy_password);
+    #endif
 
     //
     // Planner Motion
@@ -1152,6 +1161,11 @@ void MarlinSettings::postprocess() {
       // Number of esteppers may change
       uint8_t esteppers;
       EEPROM_READ_ALWAYS(esteppers);
+	  
+    #if ENABLED(SDSECURE)
+      EEPROM_READ(password_for_store);
+    #endif
+	  
 
       //
       // Planner Motion
@@ -2059,6 +2073,10 @@ void MarlinSettings::reset() {
 
   #if HAS_BED_PROBE
     zprobe_zoffset = Z_PROBE_OFFSET_FROM_EXTRUDER;
+  #endif
+	
+  #if ENABLED(SDSECURE)
+	password_for_store = 0;
   #endif
 
   //
