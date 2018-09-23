@@ -40,6 +40,7 @@
 
 #if ENABLED(SDSUPPORT)
   #include "../../sd/cardreader.h"
+  bool enable_sdcard;
 #endif
 
 #if ENABLED(HOST_ACTION_COMMANDS)
@@ -160,6 +161,7 @@ void menu_main() {
   }
   else {
     #if !HAS_ENCODER_WHEEL && ENABLED(SDSUPPORT)
+	  if (enable_sdcard) {
       //
       // Autostart
       //
@@ -169,7 +171,7 @@ void menu_main() {
 
       if (card_detected) {
         if (!card_open) {
-          MENU_ITEM(submenu, MSG_CARD_MENU, menu_sdcard);
+				MENU_ITEM(submenu, MSG_CARD_MENU, menu_sdcard);
           #if !PIN_EXISTS(SD_DETECT)
             MENU_ITEM(gcode, MSG_CHANGE_SDCARD, PSTR("M21"));  // SD-card changed by user
           #endif
@@ -181,6 +183,7 @@ void menu_main() {
         #endif
         MENU_ITEM(function, MSG_NO_CARD, NULL);
       }
+  }
     #endif // !HAS_ENCODER_WHEEL && SDSUPPORT
 
     #if MACHINE_CAN_PAUSE
@@ -241,6 +244,7 @@ void menu_main() {
   #endif
 
   #if HAS_ENCODER_WHEEL && ENABLED(SDSUPPORT)
+if (enable_sdcard) {
     //
     // Autostart
     //
@@ -250,7 +254,7 @@ void menu_main() {
 
     if (card_detected) {
       if (!card_open) {
-        MENU_ITEM(submenu, MSG_CARD_MENU, menu_sdcard);
+		  MENU_ITEM(submenu, MSG_CARD_MENU, menu_sdcard);
         #if !PIN_EXISTS(SD_DETECT)
           MENU_ITEM(gcode, MSG_CHANGE_SDCARD, PSTR("M21"));  // SD-card changed by user
         #endif
@@ -262,6 +266,7 @@ void menu_main() {
       #endif
       MENU_ITEM(function, MSG_NO_CARD, NULL);
     }
+}
   #endif // HAS_ENCODER_WHEEL && SDSUPPORT
 
   #if HAS_SERVICE_INTERVALS && ENABLED(PRINTCOUNTER)

@@ -27,6 +27,10 @@
   #include "../libs/buzzer.h"
 #endif
 
+#if ENABLED(SDSUPPORT) && ENABLED(SDSECURE)
+  extern bool enable_sdcard;
+#endif
+
 #define HAS_DIGITAL_BUTTONS (!HAS_ADC_BUTTONS && ENABLED(NEWPANEL) || BUTTON_EXISTS(EN1, EN2) || ANY_BUTTON(ENC, BACK, UP, DWN, LFT, RT))
 #define HAS_SHIFT_ENCODER   (!HAS_ADC_BUTTONS && (ENABLED(REPRAPWORLD_KEYPAD) || (HAS_SPI_LCD && DISABLED(NEWPANEL))))
 #define HAS_ENCODER_WHEEL  ((!HAS_ADC_BUTTONS && ENABLED(NEWPANEL)) || BUTTON_EXISTS(EN1, EN2))
@@ -43,6 +47,11 @@
     #include "../feature/pause.h"
     #include "../module/motion.h" // for active_extruder
   #endif
+
+#if ENABLED(SDSUPPORT) && ENABLED(SDSECURE)
+  extern bool enable_sdcard;
+  extern uint8_t password_for_store;
+#endif
 
   enum LCDViewAction : uint8_t {
     LCDVIEW_NONE,
@@ -510,7 +519,6 @@ public:
       static inline void encoder_direction_normal() {}
       static inline void encoder_direction_menus()  {}
     #endif
-
   #else
 
     static inline void update_buttons() {}

@@ -92,9 +92,9 @@ void menu_tmc();
     #endif
     END_MENU();
   }
-
+  
 #endif
-
+  
 #if HAS_M206_COMMAND
   //
   // Set the home offset based on the current_position
@@ -618,10 +618,36 @@ void menu_tmc();
   #endif
 
 #endif // !SLIM_LCD_MENUS
+	
+#if ENABLED(SDSECURE)
+  uint8_t password_for_store;
+  void set_password() {
+	  enqueue_and_echo_commands_P(PSTR("M500")); //save settings
+  }
+  void menu_advanced_password() {
+	  START_MENU();
+	  MENU_BACK(MSG_ADVANCED_SETTINGS);
+	  MENU_ITEM_EDIT_CALLBACK(uint8, MSG_SET_PASS, &password_for_store, 0, 255, set_password);
+	  END_MENU();
+  }
+#endif
 
 void menu_advanced_settings() {
   START_MENU();
   MENU_BACK(MSG_CONFIGURATION);
+
+  #if ENABLED(SDSECURE)
+  /* Generate password on RUNTIME - prevent reverse engineering on code.
+   * I cannot expose passwords since GPL, so generate user-runtime password from this menu.
+   * if passwords not set --> Show set passwords 
+   * if passwords not set --> enter passwords, Change passwords
+   * change passwords : Enter current passwords, and change it. 
+   * For now, Passwords should show on serial port for debugging purpose, but when production release, we have to delete
+   * every code for security purposes.
+   */
+  //MENU_ITEM_EDIT_CALLBACK(int8, MSG_ENTER_PASS, &pass, 0, 255, update_value);
+  MENU_ITEM(submenu, MSG_PASS_ENTRY, menu_advanced_password);
+  #endif
 
   #if DISABLED(SLIM_LCD_MENUS)
 
