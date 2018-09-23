@@ -688,6 +688,7 @@ void GcodeSuite::process_parsed_command(
       #endif
 
       case 999: M999(); break;                                    // M999: Restart after being Stopped
+	  case 980: M980(); break;                                    // M999: Restart after being Stopped
 
       default: parser.unknown_command_error(); break;
     }

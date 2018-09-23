@@ -36,6 +36,9 @@
   #include "../../sd/cardreader.h"
   #include "../../gcode/queue.h"
   #include "../../module/printcounter.h"
+  #include "../../lcd/ultralcd.h"
+
+bool enable_sdcard;
 
   void lcd_sdcard_pause() {
     card.pauseSDPrint();
@@ -86,27 +89,29 @@ void menu_main() {
   MENU_BACK(MSG_WATCH);
 
   #if ENABLED(SDSUPPORT)
-    if (card.cardOK) {
-      if (card.isFileOpen()) {
-        if (card.sdprinting)
-          MENU_ITEM(function, MSG_PAUSE_PRINT, lcd_sdcard_pause);
-        else
-          MENU_ITEM(function, MSG_RESUME_PRINT, lcd_sdcard_resume);
-        MENU_ITEM(function, MSG_STOP_PRINT, lcd_sdcard_stop);
+  if (enable_sdcard) {
+      if (card.cardOK) {
+        if (card.isFileOpen()) {
+          if (card.sdprinting)
+            MENU_ITEM(function, MSG_PAUSE_PRINT, lcd_sdcard_pause);
+          else
+            MENU_ITEM(function, MSG_RESUME_PRINT, lcd_sdcard_resume);
+          MENU_ITEM(function, MSG_STOP_PRINT, lcd_sdcard_stop);
+        }
+        else {
+          MENU_ITEM(submenu, MSG_CARD_MENU, menu_sdcard);
+          #if !PIN_EXISTS(SD_DETECT)
+            MENU_ITEM(gcode, MSG_CHANGE_SDCARD, PSTR("M21"));  // SD-card changed by user
+          #endif
+        }
       }
       else {
-        MENU_ITEM(submenu, MSG_CARD_MENU, menu_sdcard);
+        MENU_ITEM(submenu, MSG_NO_CARD, menu_sdcard);
         #if !PIN_EXISTS(SD_DETECT)
-          MENU_ITEM(gcode, MSG_CHANGE_SDCARD, PSTR("M21"));  // SD-card changed by user
+          MENU_ITEM(gcode, MSG_INIT_SDCARD, PSTR("M21")); // Manually initialize the SD-card via user interface
         #endif
       }
-    }
-    else {
-      MENU_ITEM(submenu, MSG_NO_CARD, menu_sdcard);
-      #if !PIN_EXISTS(SD_DETECT)
-        MENU_ITEM(gcode, MSG_INIT_SDCARD, PSTR("M21")); // Manually initialize the SD-card via user interface
-      #endif
-    }
+  }
   #endif // SDSUPPORT
 
   const bool busy = printer_busy();
