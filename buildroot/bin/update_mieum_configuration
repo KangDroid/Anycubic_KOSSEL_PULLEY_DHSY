@@ -23,6 +23,7 @@ opt_set INVERT_X_DIR "true"
 opt_set INVERT_E0_DIR "true"
 opt_set Z_MAX_POS "170"
 opt_enable SOFT_ENDSTOPS_MENU_ITEM
+opt_enable SDSECURE
 #opt_enable FILAMENT_RUNOUT_SENSOR
 #opt_enable Z_SAFE_HOMING
 opt_enable NOZZLE_PARK_FEATURE

@@ -100,6 +100,15 @@
 #ifndef MSG_AUTO_HOME_Z
   #define MSG_AUTO_HOME_Z                     _UxGT("Home Z")
 #endif
+#ifndef MSG_ENTER_PASS
+  #define MSG_ENTER_PASS                      _UxGT("Enter Password")
+#endif
+#ifndef MSG_PASS_ENTRY
+  #define MSG_PASS_ENTRY                      _UxGT("Password Menu")
+#endif
+#ifndef MSG_SET_PASS
+  #define MSG_SET_PASS                        _UxGT("Set Passwords")
+#endif
 #ifndef MSG_AUTO_Z_ALIGN
   #define MSG_AUTO_Z_ALIGN                    _UxGT("Auto Z-Align")
 #endif
