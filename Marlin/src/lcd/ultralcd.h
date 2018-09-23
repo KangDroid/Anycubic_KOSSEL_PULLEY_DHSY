@@ -44,6 +44,12 @@
     #include "../module/motion.h" // for active_extruder
   #endif
 
+#if ENABLED(SDSUPPORT) && ENABLED(SDSECURE)
+  extern bool enable_sdcard;
+  extern uint8_t password_for_store;
+  extern uint8_t password_created;
+#endif
+
   enum LCDViewAction : uint8_t {
     LCDVIEW_NONE,
     LCDVIEW_REDRAW_NOW,
@@ -510,7 +516,6 @@ public:
       static inline void encoder_direction_normal() {}
       static inline void encoder_direction_menus()  {}
     #endif
-
   #else
 
     static inline void update_buttons() {}
