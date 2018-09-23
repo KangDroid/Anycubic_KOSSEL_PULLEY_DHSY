@@ -1560,6 +1560,8 @@
  */
 //#define SDSUPPORT
 
+//#define SDSECURE
+
 /**
  * SD CARD: SPI SPEED
  *
