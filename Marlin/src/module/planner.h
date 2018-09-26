@@ -740,6 +740,7 @@ class Planner {
         --cleaning_buffer_counter;
         #if ENABLED(SD_FINISHED_STEPPERRELEASE) && defined(SD_FINISHED_RELEASECOMMAND)
           if (!cleaning_buffer_counter) enqueue_and_echo_commands_P(PSTR(SD_FINISHED_RELEASECOMMAND));
+          if (!cleaning_buffer_counter) enqueue_and_echo_commands_P(PSTR("M980 S0"));
         #endif
       }
     }
