@@ -19,6 +19,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
+#pragma once
 
 /**
  * German
@@ -27,8 +28,6 @@
  * See also http://marlinfw.org/docs/development/lcd_language.html
  *
  */
-#ifndef LANGUAGE_DE_H
-#define LANGUAGE_DE_H
 
 #define CHARSIZE 2
 
@@ -137,7 +136,7 @@
 #define MSG_UBL_OUTPUT_MAP_CSV              _UxGT("Ausgabe für CSV")
 #define MSG_UBL_OUTPUT_MAP_BACKUP           _UxGT("Externe Sicherung")
 #define MSG_UBL_INFO_UBL                    _UxGT("UBL-Info ausgeben")
-#define MSG_UBL_EDIT_MESH_MENU              _UxGT("Netz bearbeiten")
+#define MSG_EDIT_MESH                       _UxGT("Netz bearbeiten")
 #define MSG_UBL_FILLIN_AMOUNT               _UxGT("Menge an Füllung")
 #define MSG_UBL_MANUAL_FILLIN               _UxGT("Manuelles Füllen")
 #define MSG_UBL_SMART_FILLIN                _UxGT("Cleveres Füllen")
@@ -427,5 +426,3 @@
   #define MSG_FILAMENT_CHANGE_PURGE_1         _UxGT("Entleeren...")
   #define MSG_FILAMENT_CHANGE_RESUME_1        _UxGT("Fortsetzen...")
 #endif // LCD_HEIGHT < 4
-
-#endif // LANGUAGE_DE_H
