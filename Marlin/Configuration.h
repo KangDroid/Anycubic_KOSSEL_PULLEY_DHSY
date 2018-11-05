@@ -1151,8 +1151,6 @@
 
   //#define MESH_G28_REST_ORIGIN // After homing all axes ('G28' or 'G28 XYZ') rest Z at Z_MIN_POS
 
-  //#define MESH_EDIT_MENU       // Add a menu (with LCD_BED_LEVELING) to edit mesh points
-
 #endif // BED_LEVELING
 
 /**
