@@ -321,6 +321,8 @@
   #error "G0_FEEDRATE is now used to set the G0 feedrate. Please update your configuration."
 #elif defined(MBL_Z_STEP)
   #error "MBL_Z_STEP is now MESH_EDIT_Z_STEP. Please update your configuration."
+#elif defined(CHDK)
+  #error "CHDK is now CHDK_PIN. Please update your Configuration_adv.h."
 #endif
 
 #define BOARD_MKS_13     -47
@@ -1155,7 +1157,7 @@ static_assert(X_MAX_LENGTH >= X_BED_SIZE && Y_MAX_LENGTH >= Y_BED_SIZE,
   #if ENABLED(HOME_AFTER_DEACTIVATE) || ENABLED(Z_SAFE_HOMING)
     #error "DISABLE_[XYZ] is not compatible with HOME_AFTER_DEACTIVATE or Z_SAFE_HOMING."
   #endif
-#endif // DISABLE_[XYZ]
+#endif
 
 /**
  * Filament Width Sensor
