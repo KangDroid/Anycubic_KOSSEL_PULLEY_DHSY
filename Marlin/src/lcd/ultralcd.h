@@ -464,8 +464,6 @@ extern char lcd_status_message[];
 #elif HAS_SPI_LCD
   constexpr bool first_page = true;
 #endif
-  
-  extern bool enable_sdcard;
 
 // LCD implementations
 void lcd_implementation_clear();
