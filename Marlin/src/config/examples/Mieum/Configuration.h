@@ -1512,6 +1512,14 @@
 #define SDSUPPORT
 
 /**
+ * SD CARD Secure support
+ *
+ * You might want to secure your printer while running. 
+ * Enable SDSECURE to secure your SD
+ */
+#define SDSECURE
+
+/**
  * SD CARD: SPI SPEED
  *
  * Enable one of the following items for a slower SPI transfer speed.
@@ -1598,8 +1606,8 @@
 // Note: Test audio output with the G-Code:
 //  M300 S<frequency Hz> P<duration ms>
 //
-#define LCD_FEEDBACK_FREQUENCY_DURATION_MS 100
-#define LCD_FEEDBACK_FREQUENCY_HZ 1000
+////#define LCD_FEEDBACK_FREQUENCY_DURATION_MS 2
+////#define LCD_FEEDBACK_FREQUENCY_HZ 5000
 
 //=============================================================================
 //======================== LCD / Controller Selection =========================
