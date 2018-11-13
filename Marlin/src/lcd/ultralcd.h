@@ -38,6 +38,11 @@
   #include "../libs/buzzer.h"
 #endif
 
+#if ENABLED(SDSUPPORT) && ENABLED(SDSECURE)
+  extern bool enable_sdcard;
+  extern uint8_t password_for_store;
+#endif
+
 #define HAS_ENCODER_ACTION (HAS_LCD_MENU || ENABLED(ULTIPANEL_FEEDMULTIPLY))
 
 #if HAS_SPI_LCD
@@ -497,10 +502,6 @@ public:
     static inline void update_buttons() {}
 
   #endif
-	
-#if ENABLED(SDSUPPORT) && ENABLED(SDSECURE)
-  extern bool enable_sdcard;
-#endif
 
 private:
 

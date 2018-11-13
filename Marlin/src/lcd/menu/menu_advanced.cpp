@@ -46,21 +46,6 @@
   #include "../../module/temperature.h"
 #endif
 
-#if ENABLED(SDSECURE)
-  uint8_t pass;
-  static void update_value() {
-	  if (pass == 10) {
-	  	enqueue_and_echo_commands_P(PSTR("M980 S705"));
-		// Flush Pass away by putting zeros on pass.
-		pass = 0;
-	  } else if(pass != 10) {
-		// Beep, You've got wrong password, Reset SD Status!
-		enqueue_and_echo_commands_P(PSTR("M980 S0"));
-		pass = 0;
-	  }
-  }
-#endif
-
 #if HAS_M206_COMMAND
   //
   // Set the home offset based on the current_position
@@ -568,6 +553,19 @@ void menu_advanced_temperature() {
   #endif
 
 #endif // !SLIM_LCD_MENUS
+	
+#if ENABLED(SDSECURE)
+	//uint8_t password_for_store;
+  void set_password() {
+	  enqueue_and_echo_commands_P(PSTR("M500")); //save settings
+  }
+  void menu_advanced_password() {
+	  START_MENU();
+	  MENU_BACK(MSG_ADVANCED_SETTINGS);
+	  MENU_ITEM_EDIT_CALLBACK(int8, MSG_SET_PASS, &password_for_store, 0, 255, set_password);
+	  END_MENU();
+  }
+#endif
 
 void menu_advanced_settings() {
   START_MENU();
@@ -580,10 +578,16 @@ void menu_advanced_settings() {
   #endif
 
   #if ENABLED(SDSECURE)
-	//MENU_ITEM_EDIT_CALLBACK(bool, MSG_BED_LEVELING, &new_level_state, _lcd_toggle_bed_leveling);
-	//MENU_ITEM_EDIT_CALLBACK(int8, MSG_CASE_LIGHT_BRIGHTNESS, &case_light_brightness, 0, 255, update_case_light, true);
-	//MENU_ITEM_EDIT_CALLBACK(int3, MSG_FLOW, &planner.flow_percentage[0], 10, 999, _lcd_refresh_e_factor_0);
-	MENU_ITEM_EDIT_CALLBACK(int8, MSG_ENTER_PASS, &pass, 0, 255, update_value);
+	/* Generate password on RUNTIME - prevent reverse engineering on code.
+	 * I cannot expose passwords since GPL, so generate user-runtime password from this menu.
+	 * if passwords not set --> Show set passwords 
+	 * if passwords not set --> enter passwords, Change passwords
+	 * change passwords : Enter current passwords, and change it. 
+	 * For now, Passwords should show on serial port for debugging purpose, but when production release, we have to delete
+	 * every code for security purposes.
+	 */
+	//MENU_ITEM_EDIT_CALLBACK(int8, MSG_ENTER_PASS, &pass, 0, 255, update_value);
+	MENU_ITEM(submenu, MSG_PASS_ENTRY, menu_advanced_password);
   #endif
 
   #if DISABLED(SLIM_LCD_MENUS)

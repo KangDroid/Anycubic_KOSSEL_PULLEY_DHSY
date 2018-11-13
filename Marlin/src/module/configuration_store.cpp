@@ -37,7 +37,7 @@
  */
 
 // Change EEPROM version if the structure changes
-#define EEPROM_VERSION "V62"
+#define EEPROM_VERSION "V63"
 #define EEPROM_OFFSET 100
 
 // Check the integrity of data offsets.
@@ -94,6 +94,8 @@
   #include "../feature/tmc_util.h"
   #define TMC_GET_PWMTHRS(A,Q) _tmc_thrs(stepper##Q.microsteps(), stepper##Q.TPWMTHRS(), planner.settings.axis_steps_per_mm[_AXIS(A)])
 #endif
+  
+  uint8_t password_for_store;
 
 #pragma pack(push, 1) // No padding between variables
 
@@ -271,6 +273,8 @@ typedef struct SettingsDataStruct {
   #if EXTRUDERS > 1
     toolchange_settings_t toolchange_settings;                // M217 S P R
   #endif
+	
+  uint8_t password_for_store_here;
 
 } SettingsData;
 
@@ -967,6 +971,16 @@ void MarlinSettings::postprocess() {
         EEPROM_WRITE(dummyui32);
       #endif
     }
+	
+    //
+    // Save Passwords to EEPROM
+    //
+    {
+      #if ENABLED(SDSECURE)
+		_FIELD_TEST(password_for_store_here);
+	  	EEPROM_WRITE(password_for_store);
+      #endif
+    }
 
     //
     // CNC Coordinate Systems
@@ -1650,6 +1664,16 @@ void MarlinSettings::postprocess() {
         _FIELD_TEST(fc_settings);
         EEPROM_READ(fc_settings);
       }
+	  
+      //
+      // Password
+      //
+      {
+        #if ENABLED(SDSECURE)
+  		_FIELD_TEST(password_for_store_here);
+		EEPROM_READ(password_for_store);
+        #endif
+      }
 
       //
       // Tool-change settings
@@ -2126,6 +2150,11 @@ void MarlinSettings::reset(PORTARG_SOLO) {
       fc_settings[e].unload_length = FILAMENT_CHANGE_UNLOAD_LENGTH;
       fc_settings[e].load_length = FILAMENT_CHANGE_FAST_LOAD_LENGTH;
     }
+  #endif
+	
+  #if ENABLED(SDSECURE)
+	//uint8_t kangdroid.password_for_store = 0;
+	password_for_store = 20;
   #endif
 
   postprocess();
@@ -3002,6 +3031,11 @@ void MarlinSettings::reset(PORTARG_SOLO) {
         CONFIG_ECHO_START;
       }
       M217_report(true);
+    #endif
+	  
+    #if ENABLED(SDSECURE) 
+	  //uint8_t realpass;
+	  SERIAL_ECHOPAIR_P(port, "Pass", password_for_store);
     #endif
   }
 
