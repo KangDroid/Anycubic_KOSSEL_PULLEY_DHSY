@@ -204,6 +204,16 @@ else ifeq ($(HARDWARE_MOTHERBOARD),68)
 else ifeq ($(HARDWARE_MOTHERBOARD),72)
 # Rumba
 else ifeq ($(HARDWARE_MOTHERBOARD),80)
+# Raise3D Rumba
+else ifeq ($(HARDWARE_MOTHERBOARD),333)
+# Formbot T-Rex 2 Plus
+else ifeq ($(HARDWARE_MOTHERBOARD),95)
+# Formbot T-Rex 3
+else ifeq ($(HARDWARE_MOTHERBOARD),96)
+# Formbot Raptor
+else ifeq ($(HARDWARE_MOTHERBOARD),97)
+# Formbot Raptor 2
+else ifeq ($(HARDWARE_MOTHERBOARD),98)
 # bq ZUM Mega 3D
 else ifeq ($(HARDWARE_MOTHERBOARD),503)
 # MakeBoard Mini v2.1.2 is a control board sold by MicroMake
@@ -214,6 +224,10 @@ else ifeq ($(HARDWARE_MOTHERBOARD),343)
 else ifeq ($(HARDWARE_MOTHERBOARD),443)
 # Creality: Ender-4, CR-8
 else ifeq ($(HARDWARE_MOTHERBOARD),243)
+# Creality: CR10S, CR20, CR-X
+else ifeq ($(HARDWARE_MOTHERBOARD),244)
+# Fysetc F6
+else ifeq ($(HARDWARE_MOTHERBOARD),541)
 
 #
 # Other ATmega1280, ATmega2560
@@ -401,9 +415,21 @@ HARDWARE_VARIANT ?= Teensy
 MCU              ?= at90usb1286
 # 5DPrint D8 Driver Board
 else ifeq ($(HARDWARE_MOTHERBOARD),88)
-HARDWARE_VARIANT ?= Teensy
-MCU              ?= at90usb1286
+  HARDWARE_VARIANT ?= Teensy
+  MCU              ?= at90usb1286
 
+# UltiMachine Archim1 (with DRV8825 drivers)
+else ifeq ($(HARDWARE_MOTHERBOARD),1591)
+  HARDWARE_VARIANT ?= archim
+  MCPU              = cortex-m3
+  F_CPU             = 84000000L
+  IS_MCU            = 0
+# UltiMachine Archim2 (with TMC2130 drivers)
+else ifeq ($(HARDWARE_MOTHERBOARD),1592)
+  HARDWARE_VARIANT ?= archim
+  MCPU              = cortex-m3
+  F_CPU             = 84000000L
+  IS_MCU            = 0
 endif
 
 # Be sure to regenerate speed_lookuptable.h with create_speed_lookuptable.py
@@ -478,8 +504,23 @@ VPATH += $(ARDUINO_INSTALL_DIR)/libraries/TMC2130Stepper/src/source
 endif
 
 ifeq ($(HARDWARE_VARIANT), arduino)
-HARDWARE_SUB_VARIANT ?= mega
-VPATH += $(ARDUINO_INSTALL_DIR)/hardware/arduino/avr/variants/$(HARDWARE_SUB_VARIANT)
+  HARDWARE_SUB_VARIANT ?= mega
+  VPATH += $(ARDUINO_INSTALL_DIR)/hardware/arduino/avr/variants/$(HARDWARE_SUB_VARIANT)
+else ifeq ($(HARDWARE_VARIANT), Sanguino)
+  VPATH += $(ARDUINO_INSTALL_DIR)/hardware/marlin/avr/variants/sanguino
+else ifeq ($(HARDWARE_VARIANT), archim)
+  VPATH   += $(ARDUINO_INSTALL_DIR)/packages/ultimachine/hardware/sam/1.6.9-b/system/libsam
+  VPATH   += $(ARDUINO_INSTALL_DIR)/packages/ultimachine/hardware/sam/1.6.9-b/system/CMSIS/CMSIS/Include/
+  VPATH   += $(ARDUINO_INSTALL_DIR)/packages/ultimachine/hardware/sam/1.6.9-b/system/CMSIS/Device/ATMEL/
+  VPATH   += $(ARDUINO_INSTALL_DIR)/packages/ultimachine/hardware/sam/1.6.9-b/cores/arduino
+  VPATH   += $(ARDUINO_INSTALL_DIR)/packages/ultimachine/hardware/sam/1.6.9-b/cores/arduino/avr
+  VPATH   += $(ARDUINO_INSTALL_DIR)/packages/ultimachine/hardware/sam/1.6.9-b/cores/arduino/USB
+  VPATH   += $(ARDUINO_INSTALL_DIR)/packages/ultimachine/hardware/sam/1.6.9-b/libraries/Wire/src
+  VPATH   += $(ARDUINO_INSTALL_DIR)/packages/ultimachine/hardware/sam/1.6.9-b/libraries/SPI/src
+  VPATH   += $(ARDUINO_INSTALL_DIR)/packages/ultimachine/hardware/sam/1.6.9-b/libraries/U8glib/src/clib
+  VPATH   += $(ARDUINO_INSTALL_DIR)/packages/ultimachine/hardware/sam/1.6.9-b/variants/archim
+  LDSCRIPT = $(ARDUINO_INSTALL_DIR)/packages/ultimachine/hardware/sam/1.6.9-b/variants/archim/linker_scripts/gcc/flash.ld
+  LDLIBS   = $(ARDUINO_INSTALL_DIR)/packages/ultimachine/hardware/sam/1.6.9-b/variants/archim/libsam_sam3x8e_gcc_rel.a
 else
 ifeq ($(HARDWARE_VARIANT), Sanguino)
 VPATH += $(ARDUINO_INSTALL_DIR)/hardware/marlin/avr/variants/sanguino
@@ -569,9 +610,18 @@ CDEFS    = -DF_CPU=$(F_CPU) ${addprefix -D , $(DEFINES)}
 CXXDEFS  = $(CDEFS)
 
 ifeq ($(HARDWARE_VARIANT), Teensy)
-CDEFS  += -DUSB_SERIAL
-LIB_SRC    += usb.c pins_teensy.c
-LIB_CXXSRC += usb_api.cpp
+  CDEFS  += -DUSB_SERIAL
+  LIB_SRC    += usb.c pins_teensy.c
+  LIB_CXXSRC += usb_api.cpp
+
+else ifeq ($(HARDWARE_VARIANT), archim)
+  CDEFS      += -DARDUINO_SAM_ARCHIM -DARDUINO_ARCH_SAM -D__SAM3X8E__ -DUSB_VID=0x27b1 -DUSB_PID=0x0001 -DUSBCON '-DUSB_MANUFACTURER="UltiMachine"' '-DUSB_PRODUCT="Archim"'
+  LIB_CXXSRC += variant.cpp IPAddress.cpp Reset.cpp RingBuffer.cpp Stream.cpp UARTClass.cpp  USARTClass.cpp abi.cpp new.cpp watchdog.cpp CDC.cpp PluggableUSB.cpp  USBCore.cpp
+  LIB_SRC    += cortex_handlers.c iar_calls_sam3.c syscalls_sam3.c dtostrf.c itoa.c
+
+  ifeq ($(U8GLIB), 1)
+    LIB_SRC += u8g_com_api.c u8g_pb32h1.c
+  endif
 endif
 
 # Add all the source directories as include directories too

@@ -164,7 +164,7 @@ int8_t g26_prime_flag;
    */
   bool user_canceled() {
     if (!ui.button_pressed()) return false; // Return if the button isn't pressed
-    ui.setstatusPGM(PSTR("Mesh Validation Stopped."), 99);
+    ui.set_status_P(PSTR("Mesh Validation Stopped."), 99);
     #if HAS_LCD_MENU
       ui.quick_feedback();
     #endif
@@ -227,11 +227,11 @@ void move_to(const float &rx, const float &ry, const float &z, const float &e_de
 
   if (z != last_z) {
     last_z = z;
-    feed_value = planner.settings.max_feedrate_mm_s[Z_AXIS]/(3.0);  // Base the feed rate off of the configured Z_AXIS feed rate
+    feed_value = planner.settings.max_feedrate_mm_s[Z_AXIS]/(2.0);  // Base the feed rate off of the configured Z_AXIS feed rate
 
     destination[X_AXIS] = current_position[X_AXIS];
     destination[Y_AXIS] = current_position[Y_AXIS];
-    destination[Z_AXIS] = z;                          // We know the last_z==z or we wouldn't be in this block of code.
+    destination[Z_AXIS] = z;                          // We know the last_z!=z or we wouldn't be in this block of code.
     destination[E_AXIS] = current_position[E_AXIS];
 
     G26_line_to_destination(feed_value);
@@ -240,7 +240,7 @@ void move_to(const float &rx, const float &ry, const float &z, const float &e_de
 
   // Check if X or Y is involved in the movement.
   // Yes: a 'normal' movement. No: a retract() or recover()
-  feed_value = has_xy_component ? PLANNER_XY_FEEDRATE() / 10.0 : planner.settings.max_feedrate_mm_s[E_AXIS] / 1.5;
+  feed_value = has_xy_component ? PLANNER_XY_FEEDRATE() / 3.0 : planner.settings.max_feedrate_mm_s[E_AXIS] / 1.5;
 
   if (g26_debug_flag) SERIAL_ECHOLNPAIR("in move_to() feed_value for XY:", feed_value);
 
@@ -414,7 +414,7 @@ inline bool turn_on_heaters() {
 
     if (g26_bed_temp > 25) {
       #if ENABLED(ULTRA_LCD)
-        ui.setstatusPGM(PSTR("G26 Heating Bed."), 99);
+        ui.set_status_P(PSTR("G26 Heating Bed."), 99);
         ui.quick_feedback();
         #if HAS_LCD_MENU
           ui.capture();
@@ -435,7 +435,7 @@ inline bool turn_on_heaters() {
 
   // Start heating the active nozzle
   #if ENABLED(ULTRA_LCD)
-    ui.setstatusPGM(PSTR("G26 Heating Nozzle."), 99);
+    ui.set_status_P(PSTR("G26 Heating Nozzle."), 99);
     ui.quick_feedback();
   #endif
   thermalManager.setTargetHotend(g26_hotend_temp, active_extruder);
@@ -469,7 +469,7 @@ inline bool prime_nozzle() {
     if (g26_prime_flag == -1) {  // The user wants to control how much filament gets purged
 
       ui.capture();
-      ui.setstatusPGM(PSTR("User-Controlled Prime"), 99);
+      ui.set_status_P(PSTR("User-Controlled Prime"), 99);
       ui.chirp();
 
       set_destination_from_current();
@@ -493,7 +493,7 @@ inline bool prime_nozzle() {
 
       ui.wait_for_release();
 
-      ui.setstatusPGM(PSTR("Done Priming"), 99);
+      ui.set_status_P(PSTR("Done Priming"), 99);
       ui.quick_feedback();
       ui.release();
     }
@@ -501,7 +501,7 @@ inline bool prime_nozzle() {
   #endif
   {
     #if ENABLED(ULTRA_LCD)
-      ui.setstatusPGM(PSTR("Fixed Length Prime."), 99);
+      ui.set_status_P(PSTR("Fixed Length Prime."), 99);
       ui.quick_feedback();
     #endif
     set_destination_from_current();
@@ -819,6 +819,19 @@ void GcodeSuite::G26() {
         recover_filament(destination);
         const float save_feedrate = feedrate_mm_s;
         feedrate_mm_s = PLANNER_XY_FEEDRATE() / 10.0;
+
+        if (g26_debug_flag) {
+          SERIAL_ECHOPAIR(" plan_arc(ex=", endpoint[X_AXIS]);
+          SERIAL_ECHOPAIR(", ey=", endpoint[Y_AXIS]);
+          SERIAL_ECHOPAIR(", ez=", endpoint[Z_AXIS]);
+          SERIAL_ECHOPAIR(", len=", arc_length);
+          SERIAL_ECHOPAIR(") -> (ex=", current_position[X_AXIS]);
+          SERIAL_ECHOPAIR(", ey=", current_position[Y_AXIS]);
+          SERIAL_ECHOPAIR(", ez=", current_position[Z_AXIS]);
+          SERIAL_CHAR(')');
+          SERIAL_EOL();
+        }
+
         plan_arc(endpoint, arc_offset, false);  // Draw a counter-clockwise arc
         feedrate_mm_s = save_feedrate;
         set_destination_from_current();
@@ -881,7 +894,7 @@ void GcodeSuite::G26() {
   } while (--g26_repeats && location.x_index >= 0 && location.y_index >= 0);
 
   LEAVE:
-  ui.setstatusPGM(PSTR("Leaving G26"), -1);
+  ui.set_status_P(PSTR("Leaving G26"), -1);
 
   retract_filament(destination);
   destination[Z_AXIS] = Z_CLEARANCE_BETWEEN_PROBES;
