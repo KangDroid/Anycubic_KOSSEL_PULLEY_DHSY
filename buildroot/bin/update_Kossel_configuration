@@ -34,7 +34,6 @@ opt_set INVERT_X_DIR "false"
 opt_set INVERT_Y_DIR "false"
 opt_set INVERT_Z_DIR "false"
 opt_set INVERT_E0_DIR "false"
-opt_add SHOW_PRINT_REMAIN_TIME_PRINTING
 opt_enable PRINTCOUNTER
 opt_enable SOFT_ENDSTOPS_MENU_ITEM
 opt_enable EEPROM_SETTINGS

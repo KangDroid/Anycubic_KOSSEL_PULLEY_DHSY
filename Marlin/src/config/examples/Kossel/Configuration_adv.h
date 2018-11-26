@@ -1902,4 +1902,3 @@
 
 // Enable Marlin dev mode which adds some special commands
 //#define MARLIN_DEV_MODE
-#define SHOW_PRINT_REMAIN_TIME_PRINTING 
