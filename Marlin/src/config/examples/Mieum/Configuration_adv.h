@@ -74,8 +74,8 @@
  * THERMAL_PROTECTION_HYSTERESIS and/or THERMAL_PROTECTION_PERIOD
  */
 #if ENABLED(THERMAL_PROTECTION_HOTENDS)
-  #define THERMAL_PROTECTION_PERIOD 60
-  #define THERMAL_PROTECTION_HYSTERESIS 20
+  #define THERMAL_PROTECTION_PERIOD 40        // Seconds
+  #define THERMAL_PROTECTION_HYSTERESIS 4     // Degrees Celsius
 
   /**
    * Whenever an M104, M109, or M303 increases the target temperature, the
@@ -89,7 +89,7 @@
    * and/or decrease WATCH_TEMP_INCREASE. WATCH_TEMP_INCREASE should not be set
    * below 2.
    */
-  #define WATCH_TEMP_PERIOD 40
+  #define WATCH_TEMP_PERIOD 20                // Seconds
   #define WATCH_TEMP_INCREASE 2               // Degrees Celsius
 #endif
 
@@ -97,13 +97,13 @@
  * Thermal Protection parameters for the bed are just as above for hotends.
  */
 #if ENABLED(THERMAL_PROTECTION_BED)
-  #define THERMAL_PROTECTION_BED_PERIOD 120
-  #define THERMAL_PROTECTION_BED_HYSTERESIS 15
+  #define THERMAL_PROTECTION_BED_PERIOD 20    // Seconds
+  #define THERMAL_PROTECTION_BED_HYSTERESIS 2 // Degrees Celsius
 
   /**
    * As described above, except for the bed (M140/M190/M303).
    */
-  #define WATCH_BED_TEMP_PERIOD 120
+  #define WATCH_BED_TEMP_PERIOD 60                // Seconds
   #define WATCH_BED_TEMP_INCREASE 2               // Degrees Celsius
 #endif
 
@@ -586,7 +586,7 @@
 // Add an 'M73' G-code to set the current percentage
 //#define LCD_SET_PROGRESS_MANUALLY
 
-#if HAS_PRINT_PROGRESS
+#if HAS_CHARACTER_LCD && HAS_PRINT_PROGRESS
   //#define LCD_PROGRESS_BAR              // Show a progress bar on HD44780 LCDs for SD printing
   #if ENABLED(LCD_PROGRESS_BAR)
     #define PROGRESS_BAR_BAR_TIME 2000    // (ms) Amount of time to show the bar
@@ -1038,7 +1038,7 @@
 // enter the serial receive buffer, so they cannot be blocked.
 // Currently handles M108, M112, M410
 // Does not work on boards using AT90USB (USBCON) processors!
-#define EMERGENCY_PARSER
+//#define EMERGENCY_PARSER
 
 // Bad Serial-connections can miss a received command by sending an 'ok'
 // Therefore some clients abort after 30 seconds in a timeout.
@@ -1096,6 +1096,33 @@
 #endif
 
 /**
+ * Universal tool change settings.
+ * Applies to all types of extruders except where explicitly noted.
+ */
+#if EXTRUDERS > 1
+  // Z raise distance for tool-change, as needed for some extruders
+  #define TOOLCHANGE_ZRAISE     2  // (mm)
+
+  // Retract and prime filament on tool-change
+  //#define TOOLCHANGE_FILAMENT_SWAP
+  #if ENABLED(TOOLCHANGE_FILAMENT_SWAP)
+    #define TOOLCHANGE_FIL_SWAP_LENGTH          12  // (mm)
+    #define TOOLCHANGE_FIL_SWAP_RETRACT_SPEED 3600  // (mm/m)
+    #define TOOLCHANGE_FIL_SWAP_PRIME_SPEED   3600  // (mm/m)
+  #endif
+
+  /**
+   * Position to park head during tool change.
+   * Doesn't apply to SWITCHING_TOOLHEAD, DUAL_X_CARRIAGE, or PARKING_EXTRUDER
+   */
+  //#define TOOLCHANGE_PARK
+  #if ENABLED(TOOLCHANGE_PARK)
+    #define TOOLCHANGE_PARK_XY    { X_MIN_POS + 10, Y_MIN_POS + 10 }
+    #define TOOLCHANGE_PARK_XY_FEEDRATE 6000  // (mm/m)
+  #endif
+#endif
+
+/**
  * Advanced Pause
  * Experimental feature for filament change support and for parking the nozzle when paused.
  * Adds the GCode M600 for initiating filament change.
@@ -1105,23 +1132,23 @@
  * Requires NOZZLE_PARK_FEATURE.
  * This feature is required for the default FILAMENT_RUNOUT_SCRIPT.
  */
-#define ADVANCED_PAUSE_FEATURE
+//#define ADVANCED_PAUSE_FEATURE
 #if ENABLED(ADVANCED_PAUSE_FEATURE)
   #define PAUSE_PARK_RETRACT_FEEDRATE         60  // (mm/s) Initial retract feedrate.
   #define PAUSE_PARK_RETRACT_LENGTH            2  // (mm) Initial retract.
                                                   // This short retract is done immediately, before parking the nozzle.
-  #define FILAMENT_CHANGE_UNLOAD_FEEDRATE 80
-  #define FILAMENT_CHANGE_UNLOAD_ACCEL 20
-  #define FILAMENT_CHANGE_UNLOAD_LENGTH 740
+  #define FILAMENT_CHANGE_UNLOAD_FEEDRATE     10  // (mm/s) Unload filament feedrate. This can be pretty fast.
+  #define FILAMENT_CHANGE_UNLOAD_ACCEL        25  // (mm/s^2) Lower acceleration may allow a faster feedrate.
+  #define FILAMENT_CHANGE_UNLOAD_LENGTH      100  // (mm) The length of filament for a complete unload.
                                                   //   For Bowden, the full length of the tube and nozzle.
                                                   //   For direct drive, the full length of the nozzle.
                                                   //   Set to 0 for manual unloading.
   #define FILAMENT_CHANGE_SLOW_LOAD_FEEDRATE   6  // (mm/s) Slow move when starting load.
-  #define FILAMENT_CHANGE_SLOW_LOAD_LENGTH 50
+  #define FILAMENT_CHANGE_SLOW_LOAD_LENGTH     0  // (mm) Slow length, to allow time to insert material.
                                                   // 0 to disable start loading and skip to fast load only
-  #define FILAMENT_CHANGE_FAST_LOAD_FEEDRATE 80
-  #define FILAMENT_CHANGE_FAST_LOAD_ACCEL 20
-  #define FILAMENT_CHANGE_FAST_LOAD_LENGTH 700
+  #define FILAMENT_CHANGE_FAST_LOAD_FEEDRATE   6  // (mm/s) Load filament feedrate. This can be pretty fast.
+  #define FILAMENT_CHANGE_FAST_LOAD_ACCEL     25  // (mm/s^2) Lower acceleration may allow a faster feedrate.
+  #define FILAMENT_CHANGE_FAST_LOAD_LENGTH     0  // (mm) Load length of filament, from extruder gear to nozzle.
                                                   //   For Bowden, the full length of the tube and nozzle.
                                                   //   For direct drive, the full length of the nozzle.
   //#define ADVANCED_PAUSE_CONTINUOUS_PURGE       // Purge continuously up to the purge length until interrupted.
@@ -1132,9 +1159,9 @@
                                                   //   until extrusion is consistent, and to purge old filament.
 
                                                   // Filament Unload does a Retract, Delay, and Purge first:
-  #define FILAMENT_UNLOAD_RETRACT_LENGTH 0
-  #define FILAMENT_UNLOAD_DELAY 100
-  #define FILAMENT_UNLOAD_PURGE_LENGTH 0
+  #define FILAMENT_UNLOAD_RETRACT_LENGTH      13  // (mm) Unload initial retract length.
+  #define FILAMENT_UNLOAD_DELAY             5000  // (ms) Delay for the filament to cool after retract.
+  #define FILAMENT_UNLOAD_PURGE_LENGTH         8  // (mm) An unretract is done, then this length is purged.
 
   #define PAUSE_PARK_NOZZLE_TIMEOUT           45  // (seconds) Time limit before the nozzle is turned off for safety.
   #define FILAMENT_CHANGE_ALERT_BEEPS         10  // Number of alert beeps to play when a response is needed.
@@ -1662,6 +1689,18 @@
 //#define G0_FEEDRATE 3000 // (mm/m)
 #ifdef G0_FEEDRATE
   //#define VARIABLE_G0_FEEDRATE // The G0 feedrate is set by F in G0 motion mode
+#endif
+
+/**
+ * G-code Macros
+ *
+ * Add G-codes M810-M819 to define and run G-code macros.
+ * Macros are not saved to EEPROM.
+ */
+//#define GCODE_MACROS
+#if ENABLED(GCODE_MACROS)
+  #define GCODE_MACROS_SLOTS       5  // Up to 10 may be used
+  #define GCODE_MACROS_SLOT_SIZE  50  // Maximum length of a single macro
 #endif
 
 /**
