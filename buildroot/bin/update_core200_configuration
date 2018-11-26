@@ -35,8 +35,8 @@ opt_enable NOZZLE_PARK_FEATURE
 opt_enable SDSUPPORT
 opt_enable INDIVIDUAL_AXIS_HOMING_MENU
 opt_enable REPRAP_DISCOUNT_SMART_CONTROLLER
-opt_enable_adv EMERGENCY_PARSER
-opt_enable_adv ADVANCED_PAUSE_FEATURE
+opt_enable EMERGENCY_PARSER
+opt_enable ADVANCED_PAUSE_FEATURE
 
 cp Marlin/Configuration* Marlin/src/config/examples/Core200/
 restore_configs
