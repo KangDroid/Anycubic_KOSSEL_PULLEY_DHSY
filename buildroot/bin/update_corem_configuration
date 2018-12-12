@@ -6,6 +6,9 @@ opt_enable PID_AUTOTUNE_MENU
 opt_set DEFAULT_Kp "27.48"
 opt_set DEFAULT_Ki "2.33"
 opt_set DEFAULT_Kd "81.03"
+opt_set DEFAULT_bedKp "89.77"
+opt_set DEFAULT_bedKi "7.51"
+opt_set DEFAULT_bedKd "268.43"
 opt_set EXTRUDE_MAXLENGTH "800"
 opt_enable COREXY
 opt_set X_MIN_ENDSTOP_INVERTING "true"
