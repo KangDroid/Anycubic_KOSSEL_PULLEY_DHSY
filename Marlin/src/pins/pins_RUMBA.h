@@ -1,6 +1,6 @@
 /**
  * Marlin 3D Printer Firmware
- * Copyright (C) 2016 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
+ * Copyright (C) 2019 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
  *
  * Based on Sprinter and grbl.
  * Copyright (C) 2011 Camiel Gubbels / Erik van der Zalm
@@ -167,7 +167,7 @@
 //
 // LCD / Controller
 //
-#if ENABLED(MKS_12864OLED) || ENABLED(MKS_12864OLED_SSD1306)
+#if EITHER(MKS_12864OLED, MKS_12864OLED_SSD1306)
   #define LCD_PINS_DC      38   // Set as output on init
   #define LCD_PINS_RS      41   // Pull low for 1s to init
   // DOGM SPI LCD Support

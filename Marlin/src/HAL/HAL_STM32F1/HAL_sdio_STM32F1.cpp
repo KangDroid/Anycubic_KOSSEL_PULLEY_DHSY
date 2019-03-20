@@ -1,6 +1,6 @@
 /**
  * Marlin 3D Printer Firmware
- * Copyright (C) 2016 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
+ * Copyright (C) 2019 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
  *
  * Based on Sprinter and grbl.
  * Copyright (C) 2011 Camiel Gubbels / Erik van der Zalm
@@ -21,7 +21,7 @@
  *
  */
 
-#ifdef __STM32F1__
+#if defined(__STM32F1__) && (defined(STM32_HIGH_DENSITY) || defined(STM32_XL_DENSITY))
 
 #include "HAL_sdio_STM32F1.h"
 
@@ -264,4 +264,4 @@ bool SDIO_GetCmdResp7(void) {
   return true;
 }
 
-#endif // __STM32F1__
+#endif // __STM32F1__ && (STM32_HIGH_DENSITY || STM32_XL_DENSITY)
