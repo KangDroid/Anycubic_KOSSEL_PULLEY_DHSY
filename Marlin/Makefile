@@ -659,8 +659,15 @@ CEXTRA = -fno-use-cxa-atexit -fno-threadsafe-statics
 CFLAGS := $(CDEBUG) $(CDEFS) $(CINCS) -O$(OPT) $(CWARN) $(CEXTRA) $(CTUNING) $(CSTANDARD) -O3
 CXXFLAGS :=         $(CDEFS) $(CINCS) -O$(OPT) -Wall    $(CEXTRA) $(CTUNING) $(CXXSTANDARD) -O3
 #ASFLAGS = -Wa,-adhlns=$(<:.S=.lst),-gstabs
-LDFLAGS = -lm -flto
-
+ifeq ($(HARDWARE_VARIANT), archim)
+  LD_PREFIX = -Wl,--gc-sections,-Map,Marlin.ino.map,--cref,--check-sections,--entry=Reset_Handler,--unresolved-symbols=report-all,--warn-common,--warn-section-align
+  LD_SUFFIX = $(LDLIBS)
+  LDFLAGS   = -lm -T$(LDSCRIPT) -u _sbrk -u link -u _close -u _fstat -u _isatty -u _lseek -u _read -u _write -u _exit -u kill -u _getpid -flto
+else
+  LD_PREFIX = -Wl,--gc-sections,--relax
+  LDFLAGS   = -lm -flto
+  CTUNING   += -flto
+endif
 
 # Programming support using avrdude. Settings and variables.
 AVRDUDE_PORT = $(UPLOAD_PORT)
