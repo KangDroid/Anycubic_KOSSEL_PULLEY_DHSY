@@ -224,10 +224,14 @@ else ifeq ($(HARDWARE_MOTHERBOARD),431)
 else ifeq ($(HARDWARE_MOTHERBOARD),343)
 # TriGorilla Anycubic version 1.4 based on RAMPS EFB
 else ifeq ($(HARDWARE_MOTHERBOARD),443)
+# TriGorilla Anycubic version 1.4 Rev 1.1
+else ifeq ($(HARDWARE_MOTHERBOARD),444)
 # Creality: Ender-4, CR-8
 else ifeq ($(HARDWARE_MOTHERBOARD),243)
 # Creality: CR10S, CR20, CR-X
 else ifeq ($(HARDWARE_MOTHERBOARD),244)
+# Dagoma F5
+else ifeq ($(HARDWARE_MOTHERBOARD),245)
 # Fysetc F6
 else ifeq ($(HARDWARE_MOTHERBOARD),541)
 # Duplicator i3 Plus
@@ -236,6 +240,8 @@ else ifeq ($(HARDWARE_MOTHERBOARD),31)
 else ifeq ($(HARDWARE_MOTHERBOARD),441)
 # TRONXY V3 1.0
 else ifeq ($(HARDWARE_MOTHERBOARD),442)
+# Z-Bolt X Series
+else ifeq ($(HARDWARE_MOTHERBOARD),550)
 
 #
 # Other ATmega1280, ATmega2560
@@ -270,7 +276,7 @@ else ifeq ($(HARDWARE_MOTHERBOARD),304)
 # Einsy Retro
 else ifeq ($(HARDWARE_MOTHERBOARD),305)
 # Elefu Ra Board (v3)
-else ifeq ($(HARDWARE_MOTHERBOARD),21)
+else ifeq ($(HARDWARE_MOTHERBOARD),23)
 # Leapfrog
 else ifeq ($(HARDWARE_MOTHERBOARD),999)
 # Mega controller
@@ -287,6 +293,8 @@ else ifeq ($(HARDWARE_MOTHERBOARD),75)
 else ifeq ($(HARDWARE_MOTHERBOARD),76)
 # Geeetech GT2560 Rev B for A20(M/D)
 else ifeq ($(HARDWARE_MOTHERBOARD),86)
+# Einstart retrofit
+else ifeq ($(HARDWARE_MOTHERBOARD),666)
 
 #
 # ATmega1281, ATmega2561
@@ -577,8 +585,8 @@ LIB_SRC += chessengine.c u8g_bitmap.c u8g_circle.c u8g_clip.c u8g_com_api.c u8g_
 #LIB_SRC += u8g_ll_api.c u8g_bitmap.c u8g_clip.c u8g_com_null.c u8g_delay.c u8g_page.c u8g_pb.c u8g_pb16h1.c u8g_rect.c u8g_state.c u8g_font.c u8g_font_data.c u8g_dev_uc1701_mini12864.c
 endif
 
-ifeq ($(TMC2630), 1)
-LIB_CXXSRC += TMC2130Stepper.cpp TMC2130Stepper_COOLCONF.cpp TMC2130Stepper_DRV_STATUS.cpp TMC2130Stepper_IHOLD_IRUN.cpp TMC2130Stepper_CHOPCONF.cpp TMC2130Stepper_GCONF.cpp  TMC2130Stepper_PWMCONF.cpp SW_SPI.cpp
+ifeq ($(TMC), 1)
+  LIB_CXXSRC += TMCStepper.cpp COOLCONF.cpp DRV_STATUS.cpp IHOLD_IRUN.cpp CHOPCONF.cpp GCONF.cpp PWMCONF.cpp DRV_CONF.cpp DRVCONF.cpp DRVCTRL.cpp DRVSTATUS.cpp ENCMODE.cpp RAMP_STAT.cpp SGCSCONF.cpp SHORT_CONF.cpp SMARTEN.cpp SW_MODE.cpp SW_SPI.cpp TMC2130Stepper.cpp TMC2208Stepper.cpp TMC2209Stepper.cpp TMC2660Stepper.cpp TMC5130Stepper.cpp TMC5160Stepper.cpp
 endif
 
 ifeq ($(RELOC_WORKAROUND), 1)
@@ -659,8 +667,15 @@ CEXTRA = -fno-use-cxa-atexit -fno-threadsafe-statics
 CFLAGS := $(CDEBUG) $(CDEFS) $(CINCS) -O$(OPT) $(CWARN) $(CEXTRA) $(CTUNING) $(CSTANDARD) -O3
 CXXFLAGS :=         $(CDEFS) $(CINCS) -O$(OPT) -Wall    $(CEXTRA) $(CTUNING) $(CXXSTANDARD) -O3
 #ASFLAGS = -Wa,-adhlns=$(<:.S=.lst),-gstabs
-LDFLAGS = -lm -flto
-
+ifeq ($(HARDWARE_VARIANT), archim)
+  LD_PREFIX = -Wl,--gc-sections,-Map,Marlin.ino.map,--cref,--check-sections,--entry=Reset_Handler,--unresolved-symbols=report-all,--warn-common,--warn-section-align
+  LD_SUFFIX = $(LDLIBS)
+  LDFLAGS   = -lm -T$(LDSCRIPT) -u _sbrk -u link -u _close -u _fstat -u _isatty -u _lseek -u _read -u _write -u _exit -u kill -u _getpid -flto
+else
+  LD_PREFIX = -Wl,--gc-sections,--relax
+  LDFLAGS   = -lm -flto
+  CTUNING   += -flto
+endif
 
 # Programming support using avrdude. Settings and variables.
 AVRDUDE_PORT = $(UPLOAD_PORT)

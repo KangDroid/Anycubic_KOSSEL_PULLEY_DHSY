@@ -42,6 +42,16 @@ FORCE_INLINE bool all_axes_known() { return (axis_known_position & xyz_bits) == 
 FORCE_INLINE void set_all_unhomed() { axis_homed = 0; }
 FORCE_INLINE void set_all_unknown() { axis_known_position = 0; }
 
+FORCE_INLINE bool homing_needed() {
+  return !(
+    #if ENABLED(HOME_AFTER_DEACTIVATE)
+      all_axes_known()
+    #else
+      all_axes_homed()
+    #endif
+  );
+}
+
 // Error margin to work around float imprecision
 constexpr float slop = 0.0001;
 
@@ -318,10 +328,9 @@ void homeaxis(const AxisEnum axis);
 #if HAS_DUPLICATION_MODE
   extern bool extruder_duplication_enabled,       // Used in Dual X mode 2
               mirrored_duplication_mode;          // Used in Dual X mode 3
-#endif
-
-#if ENABLED(MULTI_NOZZLE_DUPLICATION) && HOTENDS > 2
-  uint8_t duplication_e_mask;
+  #if ENABLED(MULTI_NOZZLE_DUPLICATION)
+    extern uint8_t duplication_e_mask;
+  #endif
 #endif
 
 /**

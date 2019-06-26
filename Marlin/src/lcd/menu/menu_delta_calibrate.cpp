@@ -50,7 +50,7 @@ void _man_probe_pt(const float &rx, const float &ry) {
   float lcd_probe_pt(const float &rx, const float &ry) {
     _man_probe_pt(rx, ry);
     KEEPALIVE_STATE(PAUSED_FOR_USER);
-    ui.defer_status_screen(true);
+    ui.defer_status_screen();
     wait_for_user = true;
     #if ENABLED(HOST_PROMPT_SUPPORT)
       host_prompt_do(PROMPT_USER_CONTINUE, PSTR("Delta Calibration in progress"), PSTR("Continue"));
@@ -73,7 +73,7 @@ void _man_probe_pt(const float &rx, const float &ry) {
   }
 
   void _lcd_delta_calibrate_home() {
-    enqueue_and_echo_commands_P(PSTR("G28"));
+    queue.inject_P(PSTR("G28"));
     ui.goto_screen(_lcd_calibrate_homing);
   }
 
