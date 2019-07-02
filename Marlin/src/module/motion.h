@@ -78,12 +78,36 @@ extern float cartes[XYZ];
   #define XY_PROBE_FEEDRATE_MM_S PLANNER_XY_FEEDRATE()
 #endif
 
+#if ENABLED(HOMING_FEEDRATE_ADJUSTABLE)
+  extern float x_homing_feedrate;
+  extern float y_homing_feedrate;
+  extern float z_homing_feedrate;
+#endif
+
 /**
  * Feed rates are often configured with mm/m
  * but the planner and stepper like mm/s units.
  */
 extern const float homing_feedrate_mm_s[XYZ];
-FORCE_INLINE float homing_feedrate(const AxisEnum a) { return pgm_read_float(&homing_feedrate_mm_s[a]); }
+FORCE_INLINE float homing_feedrate(const AxisEnum a) {
+  #if ENABLED(HOMING_FEEDRATE_ADJUSTABLE)
+    float temp_feedrate = 0.0;
+    switch(a) {
+      case X_AXIS:
+        temp_feedrate = x_homing_feedrate;
+      break;
+      case Y_AXIS:
+        temp_feedrate = y_homing_feedrate;
+      break;
+      case Z_AXIS:
+        temp_feedrate = z_homing_feedrate;
+      break;
+    }
+    return MMM_TO_MMS(temp_feedrate);
+  #else
+    return pgm_read_float(&homing_feedrate_mm_s[a]); 
+  #endif
+}
 float get_homing_bump_feedrate(const AxisEnum axis);
 
 extern float feedrate_mm_s;

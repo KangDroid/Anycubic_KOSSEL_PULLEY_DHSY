@@ -789,6 +789,10 @@ void GcodeSuite::process_parsed_command(const bool no_ok/*=false*/) {
         case 982: M982(); break;
       #endif
 
+      #if ENABLED(HOMING_FEEDRATE_ADJUSTABLE)
+        case 983: M983(); break;
+      #endif
+
       #if ENABLED(POWER_LOSS_RECOVERY)
         case 413: M413(); break;                                  // M413: Enable/disable/query Power-Loss Recovery
         case 1000: M1000(); break;                                // M1000: Resume from power-loss
