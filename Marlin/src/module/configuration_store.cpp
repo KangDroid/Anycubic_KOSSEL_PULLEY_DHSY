@@ -56,6 +56,10 @@
 #include "../gcode/gcode.h"
 #include "../Marlin.h"
 
+#if ENABLED(HOMING_FEEDRATE_ADJUSTABLE)
+  #include "motion.h"
+#endif
+
 #if EITHER(EEPROM_SETTINGS, SD_FIRMWARE_UPDATE)
   #include "../HAL/shared/persistent_store_api.h"
 #endif
@@ -333,6 +337,12 @@ typedef struct SettingsDataStruct {
   #if ENABLED(EXTENSIBLE_UI)
     // This is a significant hardware change; don't reserve space when not present
     uint8_t extui_data[ExtUI::eeprom_data_size];
+  #endif
+
+  #if ENABLED(HOMING_FEEDRATE_ADJUSTABLE)
+    float x_homing_feedrate_value;
+    float y_homing_feedrate_value;
+    float z_homing_feedrate_value;
   #endif
 
 } SettingsData;
@@ -1233,6 +1243,15 @@ void MarlinSettings::postprocess() {
       }
     #endif
 
+    #if ENABLED(HOMING_FEEDRATE_ADJUSTABLE)
+      _FIELD_TEST(x_homing_feedrate);
+      EEPROM_WRITE(x_homing_feedrate);
+      _FIELD_TEST(y_homing_feedrate);
+      EEPROM_WRITE(y_homing_feedrate);
+      _FIELD_TEST(z_homing_feedrate);
+      EEPROM_WRITE(z_homing_feedrate);
+    #endif
+
     //
     // Validate CRC and Data Size
     //
@@ -2035,6 +2054,15 @@ void MarlinSettings::postprocess() {
         }
       #endif
 
+      #if ENABLED(HOMING_FEEDRATE_ADJUSTABLE)
+        _FIELD_TEST(x_homing_feedrate);
+        EEPROM_READ(x_homing_feedrate);
+        _FIELD_TEST(y_homing_feedrate);
+        EEPROM_READ(y_homing_feedrate);
+        _FIELD_TEST(z_homing_feedrate);
+        EEPROM_READ(z_homing_feedrate);
+      #endif
+
       eeprom_error = size_error(eeprom_index - (EEPROM_OFFSET));
       if (eeprom_error) {
         DEBUG_ECHO_START();
@@ -2574,6 +2602,12 @@ void MarlinSettings::reset() {
       fc_settings[e].unload_length = FILAMENT_CHANGE_UNLOAD_LENGTH;
       fc_settings[e].load_length = FILAMENT_CHANGE_FAST_LOAD_LENGTH;
     }
+  #endif
+
+  #if ENABLED(HOMING_FEEDRATE_ADJUSTABLE)
+    x_homing_feedrate = HOMING_FEEDRATE_XY;
+    y_homing_feedrate = HOMING_FEEDRATE_XY;
+    z_homing_feedrate = HOMING_FEEDRATE_Z;
   #endif
 
   postprocess();
