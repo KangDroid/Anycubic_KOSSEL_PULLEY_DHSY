@@ -263,6 +263,11 @@ class Temperature {
 
     static hotend_info_t temp_hotend[HOTENDS];
 
+    #if ENABLED(FAKE_TEMPERATURE_SUPPORTED)
+      static float kangdroid_test_value;
+      static int kangdroid_test_enabled;
+    #endif
+
     #if HAS_HEATED_BED
       static bed_info_t temp_bed;
     #endif
@@ -564,7 +569,15 @@ class Temperature {
 
     FORCE_INLINE static float degHotend(const uint8_t e) {
       E_UNUSED();
-      return temp_hotend[HOTEND_INDEX].current;
+      #if ENABLED(FAKE_TEMPERATURE_SUPPORTED)
+        if (kangdroid_test_enabled) {
+          return kangdroid_test_value;
+        } else {
+          return temp_hotend[HOTEND_INDEX].current;
+        }
+      #else
+        return temp_hotend[HOTEND_INDEX].current;
+      #endif
     }
 
     #if ENABLED(SHOW_TEMP_ADC_VALUES)
