@@ -112,6 +112,16 @@ Temperature thermalManager;
   bool Temperature::adaptive_fan_slowing = true;
 #endif
 
+#if ENABLED(FAKE_HOTEND_TEMPERATURE_SUPPORTED)
+  float Temperature::hotend_fake_temperature_value = 0.0;
+  int Temperature::hotend_fake_temperature_enabled = 0;
+#endif
+
+#if ENABLED(FAKE_BED_TEMPERATURE_SUPPORTED)
+  float Temperature::bed_fake_temperature_value = 0.0;
+  int Temperature::bed_fake_temperature_enabled = 0;
+#endif
+
 hotend_info_t Temperature::temp_hotend[HOTENDS
   #if ENABLED(TEMP_SENSOR_1_AS_REDUNDANT)
     + 1
@@ -2232,7 +2242,13 @@ void Temperature::readings_ready() {
         #ifdef MAX_CONSECUTIVE_LOW_TEMPERATURE_ERROR_ALLOWED
           if (++consecutive_low_temperature_error[e] >= MAX_CONSECUTIVE_LOW_TEMPERATURE_ERROR_ALLOWED)
         #endif
+          #if ENABLED(FAKE_HOTEND_TEMPERATURE_SUPPORTED)
+            if (!thermalManager.hotend_fake_temperature_enabled) {
+              min_temp_error((heater_ind_t)e);
+            }
+          #else
             min_temp_error((heater_ind_t)e);
+          #endif
       }
       #ifdef MAX_CONSECUTIVE_LOW_TEMPERATURE_ERROR_ALLOWED
         else
@@ -2253,7 +2269,15 @@ void Temperature::readings_ready() {
       #endif
     ;
     if (BEDCMP(temp_bed.raw, maxtemp_raw_BED)) max_temp_error(H_BED);
-    if (bed_on && BEDCMP(mintemp_raw_BED, temp_bed.raw)) min_temp_error(H_BED);
+    if (bed_on && BEDCMP(mintemp_raw_BED, temp_bed.raw)) {
+      #if ENABLED(FAKE_BED_TEMPERATURE_SUPPORTED)
+        if (!thermalManager.bed_fake_temperature_enabled) {
+          min_temp_error(H_BED);
+        }
+      #else
+        min_temp_error(H_BED);
+      #endif
+    }
   #endif
 
   #if HAS_HEATED_CHAMBER
