@@ -112,6 +112,11 @@ Temperature thermalManager;
   bool Temperature::adaptive_fan_slowing = true;
 #endif
 
+#if ENABLED(FAKE_TEMPERATURE_SUPPORTED)
+  float Temperature::hotend_fake_temperature_value = 0.0;
+  int Temperature::hotend_fake_temperature_enabled = 0;
+#endif
+
 hotend_info_t Temperature::temp_hotend[HOTENDS
   #if ENABLED(TEMP_SENSOR_1_AS_REDUNDANT)
     + 1
@@ -2232,7 +2237,14 @@ void Temperature::readings_ready() {
       #ifdef MAX_CONSECUTIVE_LOW_TEMPERATURE_ERROR_ALLOWED
         if (++consecutive_low_temperature_error[e] >= MAX_CONSECUTIVE_LOW_TEMPERATURE_ERROR_ALLOWED)
       #endif
+
+      #if ENABLED(FAKE_TEMPERATURE_SUPPORTED)
+        if (!thermalManager.hotend_fake_temperature_enabled) {
           min_temp_error(e);
+        }
+      #else
+        min_temp_error(e);
+      #endif
     }
     #ifdef MAX_CONSECUTIVE_LOW_TEMPERATURE_ERROR_ALLOWED
       else
