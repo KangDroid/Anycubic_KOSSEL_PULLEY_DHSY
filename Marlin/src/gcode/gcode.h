@@ -896,6 +896,10 @@ private:
     static void M982();
   #endif
 
+  #if ENABLED(HOMING_FEEDRATE_ADJUSTABLE)
+    static void M983();
+  #endif
+
   #if ENABLED(MAX7219_GCODE)
     static void M7219();
   #endif

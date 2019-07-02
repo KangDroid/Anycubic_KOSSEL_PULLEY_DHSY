@@ -138,6 +138,12 @@ float feedrate_mm_s = MMM_TO_MMS(1500.0f);
 
 int16_t feedrate_percentage = 100;
 
+#if ENABLED(HOMING_FEEDRATE_ADJUSTABLE)
+  float x_homing_feedrate = HOMING_FEEDRATE_XY;
+  float y_homing_feedrate = HOMING_FEEDRATE_XY;
+  float z_homing_feedrate = HOMING_FEEDRATE_Z;
+#endif
+
 // Homing feedrate is const progmem - compare to constexpr in the header
 const float homing_feedrate_mm_s[XYZ] PROGMEM = {
   #if ENABLED(DELTA)
