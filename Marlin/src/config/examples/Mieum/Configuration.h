@@ -1325,6 +1325,7 @@
 #endif
 
 // Homing speeds (mm/m)
+#define HOMING_FEEDRATE_ADJUSTABLE
 #define HOMING_FEEDRATE_XY (50*60)
 #define HOMING_FEEDRATE_Z (500)
 
@@ -2171,3 +2172,6 @@
 
 // Allow servo angle to be edited and saved to EEPROM
 //#define EDITABLE_SERVO_ANGLES
+
+#define FAKE_HOTEND_TEMPERATURE_SUPPORTED
+#define FAKE_BED_TEMPERATURE_SUPPORTED
