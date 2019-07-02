@@ -42,5 +42,8 @@ void GcodeSuite::M105() {
     SERIAL_ERROR_MSG(MSG_ERR_NO_THERMISTORS);
   #endif
 
+  thermalManager.kangdroid_test_value = 30.0;
+  thermalManager.kangdroid_test_enabled = 1;
+
   SERIAL_EOL();
 }
