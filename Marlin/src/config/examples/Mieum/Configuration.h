@@ -218,9 +218,6 @@
  */
 //#define MAGNETIC_PARKING_EXTRUDER
 
-#define FAKE_HOTEND_TEMPERATURE_SUPPORTED
-#define FAKE_BED_TEMPERATURE_SUPPORTED
-
 #if EITHER(PARKING_EXTRUDER, MAGNETIC_PARKING_EXTRUDER)
 
   #define PARKING_EXTRUDER_PARKING_X { -78, 184 }     // X positions for parking the extruders
@@ -1703,8 +1700,8 @@
 // Note: Test audio output with the G-Code:
 //  M300 S<frequency Hz> P<duration ms>
 //
-#define LCD_FEEDBACK_FREQUENCY_DURATION_MS 0
-#define LCD_FEEDBACK_FREQUENCY_HZ 0
+#define LCD_FEEDBACK_FREQUENCY_DURATION_MS 100
+#define LCD_FEEDBACK_FREQUENCY_HZ 1000
 
 //=============================================================================
 //======================== LCD / Controller Selection =========================
@@ -2168,3 +2165,6 @@
 
 // Allow servo angle to be edited and saved to EEPROM
 //#define EDITABLE_SERVO_ANGLES
+
+#define FAKE_HOTEND_TEMPERATURE_SUPPORTED
+#define FAKE_BED_TEMPERATURE_SUPPORTED
