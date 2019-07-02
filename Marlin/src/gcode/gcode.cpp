@@ -781,6 +781,9 @@ void GcodeSuite::process_parsed_command(const bool no_ok/*=false*/) {
       #endif
 
       case 999: M999(); break;                                    // M999: Restart after being Stopped
+      #if ENABLED(FAKE_HOTEND_TEMPERATURE_SUPPORTED)
+        case 981: M981(); break;
+      #endif
 
       #if ENABLED(POWER_LOSS_RECOVERY)
         case 413: M413(); break;                                  // M413: Enable/disable/query Power-Loss Recovery
