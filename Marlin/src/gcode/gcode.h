@@ -888,6 +888,10 @@ private:
     static void M1000();
   #endif
 
+  #if ENABLED(FAKE_TEMPERATURE_SUPPORTED)
+    static void M981();
+  #endif
+
   #if ENABLED(MAX7219_GCODE)
     static void M7219();
   #endif

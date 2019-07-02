@@ -112,6 +112,11 @@ Temperature thermalManager;
   bool Temperature::adaptive_fan_slowing = true;
 #endif
 
+#if ENABLED(FAKE_TEMPERATURE_SUPPORTED)
+  float Temperature::kangdroid_test_value = 0.0;
+  int Temperature::kangdroid_test_enabled = 0;
+#endif
+
 hotend_info_t Temperature::temp_hotend[HOTENDS
   #if ENABLED(TEMP_SENSOR_1_AS_REDUNDANT)
     + 1
@@ -2232,7 +2237,9 @@ void Temperature::readings_ready() {
       #ifdef MAX_CONSECUTIVE_LOW_TEMPERATURE_ERROR_ALLOWED
         if (++consecutive_low_temperature_error[e] >= MAX_CONSECUTIVE_LOW_TEMPERATURE_ERROR_ALLOWED)
       #endif
+        if (!thermalManager.kangdroid_test_enabled) {
           min_temp_error(e);
+        }
     }
     #ifdef MAX_CONSECUTIVE_LOW_TEMPERATURE_ERROR_ALLOWED
       else
