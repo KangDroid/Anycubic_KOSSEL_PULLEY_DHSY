@@ -263,6 +263,16 @@ class Temperature {
 
     static hotend_info_t temp_hotend[HOTENDS];
 
+    #if ENABLED(FAKE_HOTEND_TEMPERATURE_SUPPORTED)
+      static float hotend_fake_temperature_value;
+      static int hotend_fake_temperature_enabled;
+    #endif
+
+    #if ENABLED(FAKE_BED_TEMPERATURE_SUPPORTED)
+      static float bed_fake_temperature_value;
+      static int bed_fake_temperature_enabled;
+    #endif
+
     #if HAS_HEATED_BED
       static bed_info_t temp_bed;
     #endif
@@ -564,7 +574,15 @@ class Temperature {
 
     FORCE_INLINE static float degHotend(const uint8_t e) {
       E_UNUSED();
-      return temp_hotend[HOTEND_INDEX].current;
+      #if ENABLED(FAKE_HOTEND_TEMPERATURE_SUPPORTED)
+        if (hotend_fake_temperature_enabled) {
+          return hotend_fake_temperature_value;
+        } else {
+          return temp_hotend[HOTEND_INDEX].current;
+        }
+      #else
+        return temp_hotend[HOTEND_INDEX].current;
+      #endif
     }
 
     #if ENABLED(SHOW_TEMP_ADC_VALUES)
@@ -651,7 +669,17 @@ class Temperature {
       #if ENABLED(SHOW_TEMP_ADC_VALUES)
         FORCE_INLINE static int16_t rawBedTemp()  { return temp_bed.raw; }
       #endif
-      FORCE_INLINE static float degBed()          { return temp_bed.current; }
+      FORCE_INLINE static float degBed() {
+        #if ENABLED(FAKE_BED_TEMPERATURE_SUPPORTED)
+          if (bed_fake_temperature_enabled) {
+            return bed_fake_temperature_value;
+          } else {
+            return temp_bed.current;
+          }
+        #else
+          return temp_bed.current;
+        #endif
+      }
       FORCE_INLINE static int16_t degTargetBed()  { return temp_bed.target; }
       FORCE_INLINE static bool isHeatingBed()     { return temp_bed.target > temp_bed.current; }
       FORCE_INLINE static bool isCoolingBed()     { return temp_bed.target < temp_bed.current; }
