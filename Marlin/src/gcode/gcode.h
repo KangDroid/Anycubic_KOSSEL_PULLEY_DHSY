@@ -889,6 +889,14 @@ private:
     static void M1000();
   #endif
 
+  #if ENABLED(FAKE_HOTEND_TEMPERATURE_SUPPORTED)
+    static void M981();
+  #endif
+
+  #if ENABLED(FAKE_BED_TEMPERATURE_SUPPORTED)
+    static void M982();
+  #endif
+
   #if ENABLED(MAX7219_GCODE)
     static void M7219();
   #endif
