@@ -82,6 +82,21 @@
 #ifndef MSG_ADVANCED_SETTINGS
   #define MSG_ADVANCED_SETTINGS               _UxGT("Advanced Settings")
 #endif
+#ifndef MSG_DEVELOPER_OPTION
+  #define MSG_DEVELOPER_OPTION                _UxGT("Developer Options")
+#endif
+#ifndef MSG_AUTOHOME_FEEDRATE
+  #define MSG_AUTOHOME_FEEDRATE               _UxGT("Homing Feedrate")
+#endif
+#ifndef MSG_HOMING_X_FEEDRATE
+  #define MSG_HOMING_X_FEEDRATE               _UxGT("X Feedrate")
+#endif
+#ifndef MSG_HOMING_Y_FEEDRATE
+  #define MSG_HOMING_Y_FEEDRATE               _UxGT("Y Feedrate")
+#endif
+#ifndef MSG_HOMING_Z_FEEDRATE
+  #define MSG_HOMING_Z_FEEDRATE               _UxGT("Z Feedrate")
+#endif
 #ifndef MSG_CONFIGURATION
   #define MSG_CONFIGURATION                   _UxGT("Configuration")
 #endif
