@@ -43,6 +43,10 @@
   #include "../../module/temperature.h"
 #endif
 
+#if ENABLED(DEV_OPTION_ENABLED)
+  #include "../../module/motion.h"
+#endif
+
 #ifdef FILAMENT_RUNOUT_DISTANCE_MM
   #include "../../feature/runout.h"
   float lcd_runout_distance_mm;
@@ -447,6 +451,48 @@ void menu_backlash();
     #endif // E_STEPPERS > 2
   #endif
 
+  #if ENABLED(DEV_OPTION_ENABLED)
+    void reset_home_feedrate() {
+      x_homing_feedrate = HOMING_FEEDRATE_XY;
+      y_homing_feedrate = HOMING_FEEDRATE_XY;
+      z_homing_feedrate = HOMING_FEEDRATE_Z;
+    }
+    void menu_advanced_fake_temp() {
+      START_MENU();
+      MENU_BACK(MSG_DEVELOPER_OPTION);
+      MENU_MULTIPLIER_ITEM_EDIT(int3, MSG_ENABLE_HE_FAKE, &thermalManager.hotend_fake_temperature_enabled, 0, 1);
+      if (thermalManager.hotend_fake_temperature_enabled) {
+        MENU_MULTIPLIER_ITEM_EDIT(float3, MSG_HOTEND_FAKE_TEMPERATURE, &thermalManager.hotend_fake_temperature_value, 0, HEATER_0_MAXTEMP);
+      }
+      MENU_MULTIPLIER_ITEM_EDIT(int3, MSG_ENABLE_BED_FAKE, &thermalManager.bed_fake_temperature_enabled, 0, 1);
+      if (thermalManager.bed_fake_temperature_enabled) {
+        MENU_MULTIPLIER_ITEM_EDIT(float3, MSG_BED_FAKE_TEMPERATURE, &thermalManager.bed_fake_temperature_value, 0, BED_MAXTEMP);
+      }
+      END_MENU();
+    }
+    void menu_advanced_autohome_fr() {
+      const float feedrate_store[] = DEFAULT_MAX_FEEDRATE;
+      START_MENU();
+      MENU_BACK(MSG_DEVELOPER_OPTION);
+      MENU_MULTIPLIER_ITEM_EDIT(float5, MSG_HOMING_X_FEEDRATE, &x_homing_feedrate, 100, feedrate_store[0]);
+      MENU_MULTIPLIER_ITEM_EDIT(float5, MSG_HOMING_Y_FEEDRATE, &y_homing_feedrate, 100, feedrate_store[1]);
+      MENU_MULTIPLIER_ITEM_EDIT(float5, MSG_HOMING_Z_FEEDRATE, &z_homing_feedrate, 100, feedrate_store[2]);
+      MENU_ITEM(function, MSG_RESET_AUTOHOME_FR, reset_home_feedrate);
+      #if ENABLED(EEPROM_SETTINGS)
+        MENU_ITEM(function, MSG_STORE_EEPROM, lcd_store_settings);
+        MENU_ITEM(function, MSG_LOAD_EEPROM, lcd_load_settings);
+      #endif
+      END_MENU();
+    }
+    void menu_advanced_developer() {
+      START_MENU();
+      MENU_BACK(MSG_ADVANCED_SETTINGS);
+      MENU_ITEM(submenu, MSG_AUTOHOME_FEEDRATE, menu_advanced_autohome_fr);
+      MENU_ITEM(submenu, MSG_FAKE_TEMPERATURE, menu_advanced_fake_temp);
+      END_MENU();
+    }
+  #endif
+
   // M203 / M205 Velocity options
   void menu_advanced_velocity() {
     START_MENU();
@@ -627,6 +673,10 @@ void menu_advanced_settings() {
       // Set Home Offsets
       //
       MENU_ITEM(function, MSG_SET_HOME_OFFSETS, _lcd_set_home_offsets);
+    #endif
+
+    #if ENABLED(DEV_OPTION_ENABLED)
+      MENU_ITEM(submenu, MSG_DEVELOPER_OPTION, menu_advanced_developer);
     #endif
 
     // M203 / M205 - Feedrate items
