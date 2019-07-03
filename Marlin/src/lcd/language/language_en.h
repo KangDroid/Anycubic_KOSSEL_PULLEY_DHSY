@@ -82,6 +82,39 @@
 #ifndef MSG_ADVANCED_SETTINGS
   #define MSG_ADVANCED_SETTINGS               _UxGT("Advanced Settings")
 #endif
+#ifndef MSG_DEVELOPER_OPTION
+  #define MSG_DEVELOPER_OPTION                _UxGT("Developer Options")
+#endif
+#ifndef MSG_AUTOHOME_FEEDRATE
+  #define MSG_AUTOHOME_FEEDRATE               _UxGT("Homing Feedrate")
+#endif
+#ifndef MSG_RESET_AUTOHOME_FR
+  #define MSG_RESET_AUTOHOME_FR               _UxGT("Reset Feedrate")
+#endif
+#ifndef MSG_HOMING_X_FEEDRATE
+  #define MSG_HOMING_X_FEEDRATE               _UxGT("X Feedrate")
+#endif
+#ifndef MSG_HOMING_Y_FEEDRATE
+  #define MSG_HOMING_Y_FEEDRATE               _UxGT("Y Feedrate")
+#endif
+#ifndef MSG_HOMING_Z_FEEDRATE
+  #define MSG_HOMING_Z_FEEDRATE               _UxGT("Z Feedrate")
+#endif
+#ifndef MSG_FAKE_TEMPERATURE
+  #define MSG_FAKE_TEMPERATURE                _UxGT("Fake Temperature")
+#endif
+#ifndef MSG_ENABLE_HE_FAKE
+  #define MSG_ENABLE_HE_FAKE                  _UxGT("Enable Nozzle")
+#endif
+#ifndef MSG_ENABLE_BED_FAKE
+  #define MSG_ENABLE_BED_FAKE                 _UxGT("Enable Bed")
+#endif
+#ifndef MSG_HOTEND_FAKE_TEMPERATURE
+  #define MSG_HOTEND_FAKE_TEMPERATURE         _UxGT("Nozzle")
+#endif
+#ifndef MSG_BED_FAKE_TEMPERATURE
+  #define MSG_BED_FAKE_TEMPERATURE            _UxGT("Bed")
+#endif
 #ifndef MSG_CONFIGURATION
   #define MSG_CONFIGURATION                   _UxGT("Configuration")
 #endif
