@@ -409,6 +409,12 @@
 #define TEMP_SENSOR_BED 1
 #define TEMP_SENSOR_CHAMBER 0
 
+/*
+ * Support for setting Fake temperature via GCode: DEVELOPER ONLY
+ */
+#define FAKE_HOTEND_TEMPERATURE_SUPPORTED
+#define FAKE_BED_TEMPERATURE_SUPPORTED 
+
 // Dummy thermistor constant temperature readings, for use with 998 and 999
 #define DUMMY_THERMISTOR_998_VALUE 25
 #define DUMMY_THERMISTOR_999_VALUE 100
@@ -1319,6 +1325,7 @@
 #endif
 
 // Homing speeds (mm/m)
+#define HOMING_FEEDRATE_ADJUSTABLE
 #define HOMING_FEEDRATE_XY (50*60)
 #define HOMING_FEEDRATE_Z (500)
 
