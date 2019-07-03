@@ -69,6 +69,7 @@ opt_set THERMAL_PROTECTION_BED_PERIOD 120
 opt_set WATCH_BED_TEMP_PERIOD 120
 opt_enable FAKE_HOTEND_TEMPERATURE_SUPPORTED
 opt_enable FAKE_BED_TEMPERATURE_SUPPORTED
+opt_enable HOMING_FEEDRATE_ADJUSTABLE
 
 cp Marlin/Configuration* Marlin/src/config/examples/Mieum/
 restore_configs
