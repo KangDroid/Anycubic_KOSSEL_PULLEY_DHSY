@@ -1427,6 +1427,21 @@
 #ifndef MSG_MAZE
   #define MSG_MAZE                            _UxGT("Maze")
 #endif
+#ifndef MSG_ENTER_PASS
+	#define MSG_ENTER_PASS                      _UxGT("Enter Password")
+#endif
+#ifndef MSG_PASS_ENTRY
+  #define MSG_PASS_ENTRY                      _UxGT("Password Menu")
+#endif
+#ifndef MSG_SET_PASS
+  #define MSG_SET_PASS                        _UxGT("Set Passwords")
+#endif
+#ifndef MSG_RESET_PASS
+  #define MSG_RESET_PASS                      _UxGT("Reset Passwords")
+#endif
+#ifndef MSG_ENABLE_SD
+  #define MSG_ENABLE_SD                       _UxGT("Enable SD")
+#endif
 
 //
 // Filament Change screens show up to 3 lines on a 4-line display
