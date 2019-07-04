@@ -1619,6 +1619,13 @@
 #define SDSUPPORT
 
 /**
+ * SD CARD Secure Print
+ * Enabling this feature will require password prior enabling sdcard menu.
+ * So basically we need to enter a password to enable sdcard menu.
+ */
+#define SDSECURE
+
+/**
  * SD CARD: SPI SPEED
  *
  * Enable one of the following items for a slower SPI transfer speed.
