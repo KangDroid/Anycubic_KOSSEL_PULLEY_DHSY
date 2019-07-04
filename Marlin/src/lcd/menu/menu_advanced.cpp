@@ -659,12 +659,61 @@ void menu_backlash();
 
 #endif // !SLIM_LCD_MENUS
 
+#if ENABLED(SDSECURE)
+  // Re-Declare variable(Extern)
+  uint8_t password_for_store;
+  uint8_t password_visual;
+  uint8_t password_created;
+  void set_password() {
+    password_for_store = password_visual;
+    password_visual = 0; // always reset visual - value before showing it to user.
+    password_created = 1; // Password is CREATED now!
+  }
+  void reset_password() {
+    if (password_visual == password_for_store) {
+      password_created = 0; //Access Granted, You are now able to master your password
+    } else {
+      password_created = 1; //Remain 1 because user was wrong for before-check
+    }
+    password_visual = 0; // always reset visual - value before showing it to user.
+  }
+  void enable_sd() {
+    if (password_visual == password_for_store) {
+      enable_sdcard = true;
+    }
+    password_visual = 0; // always reset visual - value before showing it to user.
+  }
+  void menu_advanced_password() {
+    START_MENU();
+    MENU_BACK(MSG_ADVANCED_SETTINGS);
+    if (password_created != 1) {
+      MENU_ITEM_EDIT_CALLBACK(uint8, MSG_SET_PASS, &password_visual, 0, 255, set_password);
+    } else if (password_created = 1) {
+      MENU_ITEM_EDIT_CALLBACK(uint8, MSG_RESET_PASS, &password_visual, 0, 255, reset_password);
+      MENU_ITEM_EDIT_CALLBACK(uint8, MSG_ENABLE_SD, &password_visual, 0, 255, enable_sd);
+    }
+    END_MENU();
+  }
+#endif
+
 void menu_advanced_settings() {
   #ifdef FILAMENT_RUNOUT_DISTANCE_MM
     lcd_runout_distance_mm = runout.runout_distance();
   #endif
   START_MENU();
   MENU_BACK(MSG_CONFIGURATION);
+
+  #if ENABLED(SDSECURE)
+    /* Generate password on RUNTIME - prevent reverse engineering on code.
+     * I cannot expose passwords since GPL, so generate user-runtime password from this menu.
+     * if passwords not set --> Show set passwords 
+     * if passwords not set --> enter passwords, Change passwords
+     * change passwords : Enter current passwords, and change it. 
+     * For now, Passwords should show on serial port for debugging purpose, but when production release, we have to delete
+     * every code for security purposes.
+     */
+    MENU_ITEM(submenu, MSG_PASS_ENTRY, menu_advanced_password);
+  #endif
 
   #if DISABLED(SLIM_LCD_MENUS)
 
