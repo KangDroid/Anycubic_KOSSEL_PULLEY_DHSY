@@ -1,9 +1,9 @@
 /**
  * Marlin 3D Printer Firmware
- * Copyright (C) 2019 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
+ * Copyright (c) 2019 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
  *
  * Based on Sprinter and grbl.
- * Copyright (C) 2011 Camiel Gubbels / Erik van der Zalm
+ * Copyright (c) 2011 Camiel Gubbels / Erik van der Zalm
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -105,9 +105,9 @@
         ui.wait_for_bl_move = true;
         ui.goto_screen(_lcd_level_bed_done);
         #if ENABLED(MESH_BED_LEVELING)
-          enqueue_and_echo_commands_P(PSTR("G29 S2"));
+          queue.inject_P(PSTR("G29 S2"));
         #elif ENABLED(PROBE_MANUALLY)
-          enqueue_and_echo_commands_P(PSTR("G29 V1"));
+          queue.inject_P(PSTR("G29 V1"));
         #endif
       }
       else
@@ -120,7 +120,7 @@
     // Encoder knob or keypad buttons adjust the Z position
     //
     if (ui.encoderPosition) {
-      const float z = current_position[Z_AXIS] + float((int32_t)ui.encoderPosition) * (MESH_EDIT_Z_STEP);
+      const float z = current_position[Z_AXIS] + float(int16_t(ui.encoderPosition)) * (MESH_EDIT_Z_STEP);
       line_to_z(constrain(z, -(LCD_PROBE_Z_RANGE) * 0.5f, (LCD_PROBE_Z_RANGE) * 0.5f));
       ui.refresh(LCDVIEW_CALL_REDRAW_NEXT);
       ui.encoderPosition = 0;
@@ -157,9 +157,9 @@
     // G29 Records Z, moves, and signals when it pauses
     ui.wait_for_bl_move = true;
     #if ENABLED(MESH_BED_LEVELING)
-      enqueue_and_echo_commands_P(manual_probe_index ? PSTR("G29 S2") : PSTR("G29 S1"));
+      queue.inject_P(manual_probe_index ? PSTR("G29 S2") : PSTR("G29 S1"));
     #elif ENABLED(PROBE_MANUALLY)
-      enqueue_and_echo_commands_P(PSTR("G29 V1"));
+      queue.inject_P(PSTR("G29 V1"));
     #endif
   }
 
@@ -191,10 +191,10 @@
   // Step 2: Continue Bed Leveling...
   //
   void _lcd_level_bed_continue() {
-    ui.defer_status_screen(true);
+    ui.defer_status_screen();
     set_all_unhomed();
     ui.goto_screen(_lcd_level_bed_homing);
-    enqueue_and_echo_commands_P(PSTR("G28"));
+    queue.inject_P(PSTR("G28"));
   }
 
 #endif // PROBE_MANUALLY || MESH_BED_LEVELING
@@ -239,7 +239,7 @@ void menu_bed_leveling() {
   const bool is_homed = all_axes_known();
 
   // Auto Home if not using manual probing
-  #if DISABLED(PROBE_MANUALLY, MESH_BED_LEVELING)
+  #if NONE(PROBE_MANUALLY, MESH_BED_LEVELING)
     if (!is_homed) MENU_ITEM(gcode, MSG_AUTO_HOME, PSTR("G28"));
   #endif
 

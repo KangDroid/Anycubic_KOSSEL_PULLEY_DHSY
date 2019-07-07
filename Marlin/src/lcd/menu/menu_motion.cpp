@@ -1,9 +1,9 @@
 /**
  * Marlin 3D Printer Firmware
- * Copyright (C) 2019 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
+ * Copyright (c) 2019 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
  *
  * Based on Sprinter and grbl.
- * Copyright (C) 2011 Camiel Gubbels / Erik van der Zalm
+ * Copyright (c) 2011 Camiel Gubbels / Erik van der Zalm
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -121,16 +121,16 @@ static void _lcd_move_xyz(PGM_P name, AxisEnum axis) {
     #endif
 
     // Get the new position
-    const float diff = float((int32_t)ui.encoderPosition) * move_menu_scale;
+    const float diff = float(int16_t(ui.encoderPosition)) * move_menu_scale;
     #if IS_KINEMATIC
       manual_move_offset += diff;
-      if ((int32_t)ui.encoderPosition < 0)
+      if (int16_t(ui.encoderPosition) < 0)
         NOLESS(manual_move_offset, min - current_position[axis]);
       else
         NOMORE(manual_move_offset, max - current_position[axis]);
     #else
       current_position[axis] += diff;
-      if ((int32_t)ui.encoderPosition < 0)
+      if (int16_t(ui.encoderPosition) < 0)
         NOLESS(current_position[axis], min);
       else
         NOMORE(current_position[axis], max);
@@ -161,7 +161,7 @@ static void _lcd_move_e(
   ui.encoder_direction_normal();
   if (ui.encoderPosition) {
     if (!ui.processing_manual_move) {
-      const float diff = float((int32_t)ui.encoderPosition) * move_menu_scale;
+      const float diff = float(int16_t(ui.encoderPosition)) * move_menu_scale;
       #if IS_KINEMATIC
         manual_move_offset += diff;
       #else
@@ -235,13 +235,14 @@ inline void lcd_move_e() { _lcd_move_e(); }
 screenFunc_t _manual_move_func_ptr;
 
 void _goto_manual_move(const float scale) {
-  ui.defer_status_screen(true);
+  ui.defer_status_screen();
   move_menu_scale = scale;
   ui.goto_screen(_manual_move_func_ptr);
 }
-void menu_move_10mm() { _goto_manual_move(10); }
-void menu_move_1mm()  { _goto_manual_move( 1); }
-void menu_move_01mm() { _goto_manual_move( 0.1f); }
+void menu_move_10mm()   { _goto_manual_move(10); }
+void menu_move_1mm()    { _goto_manual_move( 1); }
+void menu_move_01mm()   { _goto_manual_move( 0.1f); }
+void menu_move_0025mm() { _goto_manual_move( 0.025f); }
 
 void _menu_move_distance(const AxisEnum axis, const screenFunc_t func, const int8_t eindex=-1) {
   _manual_move_func_ptr = func;
@@ -269,6 +270,8 @@ void _menu_move_distance(const AxisEnum axis, const screenFunc_t func, const int
     MENU_ITEM(submenu, MSG_MOVE_10MM, menu_move_10mm);
     MENU_ITEM(submenu, MSG_MOVE_1MM, menu_move_1mm);
     MENU_ITEM(submenu, MSG_MOVE_01MM, menu_move_01mm);
+    if (axis == Z_AXIS)
+      MENU_ITEM(submenu, MSG_MOVE_0025MM, menu_move_0025mm);
   }
   END_MENU();
 }
@@ -335,7 +338,7 @@ void menu_move() {
   else
     MENU_ITEM(gcode, MSG_AUTO_HOME, PSTR("G28"));
 
-  #if EITHER(SWITCHING_EXTRUDER, SWITCHING_NOZZLE)
+  #if ANY(SWITCHING_EXTRUDER, SWITCHING_NOZZLE, MAGNETIC_SWITCHING_TOOLHEAD)
 
     #if EXTRUDERS == 6
       switch (active_extruder) {
@@ -465,7 +468,7 @@ void menu_motion() {
     #if DISABLED(PROBE_MANUALLY)
       MENU_ITEM(gcode, MSG_LEVEL_BED, PSTR("G28\nG29"));
     #endif
-    if (leveling_is_valid()) {
+    if (all_axes_homed() && leveling_is_valid()) {
       bool new_level_state = planner.leveling_active;
       MENU_ITEM_EDIT_CALLBACK(bool, MSG_BED_LEVELING, &new_level_state, _lcd_toggle_bed_leveling);
     }

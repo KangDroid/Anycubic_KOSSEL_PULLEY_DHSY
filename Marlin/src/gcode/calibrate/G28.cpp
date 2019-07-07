@@ -1,9 +1,9 @@
 /**
  * Marlin 3D Printer Firmware
- * Copyright (C) 2019 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
+ * Copyright (c) 2019 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
  *
  * Based on Sprinter and grbl.
- * Copyright (C) 2011 Camiel Gubbels / Erik van der Zalm
+ * Copyright (c) 2011 Camiel Gubbels / Erik van der Zalm
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -75,7 +75,7 @@
     const float mlx = max_length(X_AXIS),
                 mly = max_length(Y_AXIS),
                 mlratio = mlx > mly ? mly / mlx : mlx / mly,
-                fr_mm_s = MIN(homing_feedrate(X_AXIS), homing_feedrate(Y_AXIS)) * SQRT(sq(mlratio) + 1.0);
+                fr_mm_s = _MIN(homing_feedrate(X_AXIS), homing_feedrate(Y_AXIS)) * SQRT(sq(mlratio) + 1.0);
 
     #if ENABLED(SENSORLESS_HOMING)
       sensorless_t stealth_states { false, false, false, false, false, false, false };
@@ -182,7 +182,6 @@
  *
  */
 void GcodeSuite::G28(const bool always_home_all) {
-
   if (DEBUGGING(LEVELING)) {
     DEBUG_ECHOLNPGM(">>> G28");
     log_machine_info();
@@ -204,17 +203,9 @@ void GcodeSuite::G28(const bool always_home_all) {
     }
   #endif
 
-  if (parser.boolval('O')) {
-    if (
-      #if ENABLED(HOME_AFTER_DEACTIVATE)
-        all_axes_known()  // homing needed anytime steppers deactivate
-      #else
-        all_axes_homed()  // homing needed only if never homed
-      #endif
-    ) {
-      if (DEBUGGING(LEVELING)) DEBUG_ECHOLNPGM("> homing not needed, skip\n<<< G28");
-      return;
-    }
+  if (!homing_needed() && parser.boolval('O')) {
+    if (DEBUGGING(LEVELING)) DEBUG_ECHOLNPGM("> homing not needed, skip\n<<< G28");
+    return;
   }
 
   // Wait for planner moves to finish!
@@ -238,16 +229,12 @@ void GcodeSuite::G28(const bool always_home_all) {
     workspace_plane = PLANE_XY;
   #endif
 
-  #if ENABLED(BLTOUCH)
-    bltouch.init();
-  #endif
-
   // Always home with tool 0 active
   #if HOTENDS > 1
     #if DISABLED(DELTA) || ENABLED(DELTA_HOME_TO_SAFE_ZONE)
       const uint8_t old_tool_index = active_extruder;
     #endif
-    tool_change(0, 0, true);
+    tool_change(0, true);
   #endif
 
   #if HAS_DUPLICATION_MODE
@@ -265,16 +252,15 @@ void GcodeSuite::G28(const bool always_home_all) {
 
   #else // NOT DELTA
 
-    const bool homeX = always_home_all || parser.seen('X'),
-               homeY = always_home_all || parser.seen('Y'),
-               homeZ = always_home_all || parser.seen('Z'),
-               home_all = (!homeX && !homeY && !homeZ) || (homeX && homeY && homeZ);
+    const bool homeX = parser.seen('X'), homeY = parser.seen('Y'), homeZ = parser.seen('Z'),
+               home_all = always_home_all || (homeX == homeY && homeX == homeZ),
+               doX = home_all || homeX, doY = home_all || homeY, doZ = home_all || homeZ;
 
     set_destination_from_current();
 
     #if Z_HOME_DIR > 0  // If homing away from BED do Z first
 
-      if (home_all || homeZ) homeaxis(Z_AXIS);
+      if (doZ) homeaxis(Z_AXIS);
 
     #endif
 
@@ -285,7 +271,7 @@ void GcodeSuite::G28(const bool always_home_all) {
           (parser.seenval('R') ? parser.value_linear_units() : Z_HOMING_HEIGHT)
     );
 
-    if (z_homing_height && (home_all || homeX || homeY)) {
+    if (z_homing_height && (doX || doY)) {
       // Raise Z before homing any other axes and z is not already high enough (never lower z)
       destination[Z_AXIS] = z_homing_height;
       if (destination[Z_AXIS] > current_position[Z_AXIS]) {
@@ -296,25 +282,25 @@ void GcodeSuite::G28(const bool always_home_all) {
 
     #if ENABLED(QUICK_HOME)
 
-      if (home_all || (homeX && homeY)) quick_home_xy();
+      if (doX && doY) quick_home_xy();
 
     #endif
 
     // Home Y (before X)
     #if ENABLED(HOME_Y_BEFORE_X)
 
-      if (home_all || homeY
+      if (doY
         #if ENABLED(CODEPENDENT_XY_HOMING)
-          || homeX
+          || doX
         #endif
       ) homeaxis(Y_AXIS);
 
     #endif
 
     // Home X
-    if (home_all || homeX
+    if (doX
       #if ENABLED(CODEPENDENT_XY_HOMING) && DISABLED(HOME_Y_BEFORE_X)
-        || homeY
+        || doY
       #endif
     ) {
 
@@ -345,12 +331,15 @@ void GcodeSuite::G28(const bool always_home_all) {
 
     // Home Y (after X)
     #if DISABLED(HOME_Y_BEFORE_X)
-      if (home_all || homeY) homeaxis(Y_AXIS);
+      if (doY) homeaxis(Y_AXIS);
     #endif
 
     // Home Z last if homing towards the bed
     #if Z_HOME_DIR < 0
-      if (home_all || homeZ) {
+      if (doZ) {
+        #if ENABLED(BLTOUCH)
+          bltouch.init();
+        #endif
         #if ENABLED(Z_SAFE_HOMING)
           home_z_safely();
         #else
@@ -361,7 +350,7 @@ void GcodeSuite::G28(const bool always_home_all) {
           move_z_after_probing();
         #endif
 
-      } // home_all || homeZ
+      } // doZ
     #endif // Z_HOME_DIR < 0
 
     sync_plan_position();
@@ -402,6 +391,15 @@ void GcodeSuite::G28(const bool always_home_all) {
 
   #endif // DUAL_X_CARRIAGE
 
+  #ifdef HOMING_BACKOFF_MM
+    endstops.enable(false);
+    constexpr float endstop_backoff[XYZ] = HOMING_BACKOFF_MM;
+    const float backoff_x = doX ? ABS(endstop_backoff[X_AXIS]) * (X_HOME_DIR) : 0,
+                backoff_y = doY ? ABS(endstop_backoff[Y_AXIS]) * (Y_HOME_DIR) : 0,
+                backoff_z = doZ ? ABS(endstop_backoff[Z_AXIS]) * (Z_HOME_DIR) : 0;
+    if (backoff_z) do_blocking_move_to_z(current_position[Z_AXIS] - backoff_z);
+    if (backoff_x || backoff_y) do_blocking_move_to_xy(current_position[X_AXIS] - backoff_x, current_position[Y_AXIS] - backoff_y);
+  #endif
   endstops.not_homing();
 
   #if BOTH(DELTA, DELTA_HOME_TO_SAFE_ZONE)
@@ -417,12 +415,12 @@ void GcodeSuite::G28(const bool always_home_all) {
 
   // Restore the active tool after homing
   #if HOTENDS > 1 && (DISABLED(DELTA) || ENABLED(DELTA_HOME_TO_SAFE_ZONE))
-    #if ENABLED(PARKING_EXTRUDER)
+    #if EITHER(PARKING_EXTRUDER, DUAL_X_CARRIAGE)
       #define NO_FETCH false // fetch the previous toolhead
     #else
       #define NO_FETCH true
     #endif
-    tool_change(old_tool_index, 0, NO_FETCH);
+    tool_change(old_tool_index, NO_FETCH);
   #endif
 
   ui.refresh();
@@ -430,9 +428,9 @@ void GcodeSuite::G28(const bool always_home_all) {
   report_current_position();
   #if ENABLED(NANODLP_Z_SYNC)
     #if ENABLED(NANODLP_ALL_AXIS)
-      #define _HOME_SYNC true                 // For any axis, output sync text.
+      #define _HOME_SYNC true       // For any axis, output sync text.
     #else
-      #define _HOME_SYNC (home_all || homeZ)  // Only for Z-axis
+      #define _HOME_SYNC doZ        // Only for Z-axis
     #endif
     if (_HOME_SYNC)
       SERIAL_ECHOLNPGM(MSG_Z_MOVE_COMP);

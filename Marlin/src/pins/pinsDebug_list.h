@@ -1,9 +1,6 @@
 /**
  * Marlin 3D Printer Firmware
- * Copyright (C) 2019 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
- *
- * Based on Sprinter and grbl.
- * Copyright (C) 2011 Camiel Gubbels / Erik van der Zalm
+ * Copyright (c) 2019 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -171,6 +168,12 @@
 #endif
 #if PIN_EXISTS(CONTROLLER_FAN)
   REPORT_NAME_DIGITAL(__LINE__, CONTROLLER_FAN_PIN)
+#endif
+#if PIN_EXISTS(COOLANT_FLOOD)
+  REPORT_NAME_DIGITAL(__LINE__, COOLANT_FLOOD_PIN)
+#endif
+#if PIN_EXISTS(COOLANT_MIST)
+  REPORT_NAME_DIGITAL(__LINE__, COOLANT_MIST_PIN)
 #endif
 #if PIN_EXISTS(CUTOFF_RESET)
   REPORT_NAME_DIGITAL(__LINE__, CUTOFF_RESET_PIN)
@@ -764,15 +767,6 @@
 #if defined(SPARE_IO) && SPARE_IO >= 0
   REPORT_NAME_DIGITAL(__LINE__, SPARE_IO)
 #endif
-#if defined(SPI_CHAN_DAC) && SPI_CHAN_DAC >= 0
-  REPORT_NAME_DIGITAL(__LINE__, SPI_CHAN_DAC)
-#endif
-#if defined(SPI_CHAN_EEPROM1) && SPI_CHAN_EEPROM1 >= 0
-  REPORT_NAME_DIGITAL(__LINE__, SPI_CHAN_EEPROM1)
-#endif
-#if defined(SPI_EEPROM) && SPI_EEPROM >= 0
-  REPORT_NAME_DIGITAL(__LINE__, SPI_EEPROM)
-#endif
 #if defined(SPI_EEPROM1_CS) && SPI_EEPROM1_CS >= 0
   REPORT_NAME_DIGITAL(__LINE__, SPI_EEPROM1_CS)
 #endif
@@ -788,8 +782,8 @@
 #if PIN_EXISTS(SPINDLE_ENABLE)
   REPORT_NAME_DIGITAL(__LINE__, SPINDLE_ENABLE_PIN)
 #endif
-#if PIN_EXISTS(SPINDLE_LASER_ENABLE)
-  REPORT_NAME_DIGITAL(__LINE__, SPINDLE_LASER_ENABLE_PIN)
+#if PIN_EXISTS(SPINDLE_LASER_ENA)
+  REPORT_NAME_DIGITAL(__LINE__, SPINDLE_LASER_ENA_PIN)
 #endif
 #if PIN_EXISTS(SPINDLE_LASER_PWM)
   REPORT_NAME_DIGITAL(__LINE__, SPINDLE_LASER_PWM_PIN)

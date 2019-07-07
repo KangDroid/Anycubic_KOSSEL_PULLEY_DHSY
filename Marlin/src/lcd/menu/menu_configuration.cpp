@@ -1,9 +1,9 @@
 /**
  * Marlin 3D Printer Firmware
- * Copyright (C) 2019 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
+ * Copyright (c) 2019 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
  *
  * Based on Sprinter and grbl.
- * Copyright (C) 2011 Camiel Gubbels / Erik van der Zalm
+ * Copyright (c) 2011 Camiel Gubbels / Erik van der Zalm
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -42,6 +42,9 @@
 
 #if HAS_BED_PROBE
   #include "../../module/probe.h"
+  #if ENABLED(BLTOUCH)
+    #include "../../feature/bltouch.h"
+  #endif
 #endif
 
 #define HAS_DEBUG_MENU ENABLED(LCD_PROGRESS_BAR_TEST)
@@ -87,7 +90,7 @@ static void lcd_factory_settings() {
   void menu_debug() {
     START_MENU();
 
-    MENU_BACK(MSG_MAIN);
+    MENU_BACK(MSG_CONFIGURATION);
 
     #if ENABLED(LCD_PROGRESS_BAR_TEST)
       MENU_ITEM(submenu, MSG_PROGRESS_BAR_TEST, _progress_bar_test);
@@ -104,7 +107,7 @@ static void lcd_factory_settings() {
 
   void menu_tool_change() {
     START_MENU();
-    MENU_BACK(MSG_MAIN);
+    MENU_BACK(MSG_CONFIGURATION);
     #if ENABLED(TOOLCHANGE_FILAMENT_SWAP)
       MENU_ITEM_EDIT(float3, MSG_FILAMENT_SWAP_LENGTH, &toolchange_settings.swap_length, 0, 200);
       MENU_MULTIPLIER_ITEM_EDIT(int4, MSG_SINGLENOZZLE_RETRACT_SPD, &toolchange_settings.retract_speed, 10, 5400);
@@ -116,21 +119,40 @@ static void lcd_factory_settings() {
 
 #endif
 
-#if ENABLED(DUAL_X_CARRIAGE)
-
+#if HAS_HOTEND_OFFSET
   #include "../../module/motion.h"
   #include "../../gcode/queue.h"
 
-  void _recalc_IDEX_settings() {
-    if (active_extruder) {                      // For the 2nd extruder re-home so the next tool-change gets the new offsets.
-      enqueue_and_echo_commands_P(PSTR("G28")); // In future, we can babystep the 2nd extruder (if active), making homing unnecessary.
-      active_extruder = 0;
-    }
-  }
+  void menu_tool_offsets() {
 
-  void menu_IDEX() {
+    auto _recalc_offsets = []{
+      if (active_extruder && all_axes_known()) {  // For the 2nd extruder re-home so the next tool-change gets the new offsets.
+        queue.inject_P(PSTR("G28")); // In future, we can babystep the 2nd extruder (if active), making homing unnecessary.
+        active_extruder = 0;
+      }
+    };
+
     START_MENU();
-    MENU_BACK(MSG_MAIN);
+    MENU_BACK(MSG_CONFIGURATION);
+    #if ENABLED(DUAL_X_CARRIAGE)
+      MENU_MULTIPLIER_ITEM_EDIT_CALLBACK(float51, MSG_X_OFFSET, &hotend_offset[X_AXIS][1], float(X2_HOME_POS - 25), float(X2_HOME_POS + 25), _recalc_offsets);
+    #else
+      MENU_MULTIPLIER_ITEM_EDIT_CALLBACK(float52sign, MSG_X_OFFSET, &hotend_offset[X_AXIS][1], -10.0, 10.0, _recalc_offsets);
+    #endif
+    MENU_MULTIPLIER_ITEM_EDIT_CALLBACK(float52sign, MSG_Y_OFFSET, &hotend_offset[Y_AXIS][1], -10.0, 10.0, _recalc_offsets);
+    MENU_MULTIPLIER_ITEM_EDIT_CALLBACK(float52sign, MSG_Z_OFFSET, &hotend_offset[Z_AXIS][1], Z_PROBE_LOW_POINT, 10.0, _recalc_offsets);
+    #if ENABLED(EEPROM_SETTINGS)
+      MENU_ITEM(function, MSG_STORE_EEPROM, lcd_store_settings);
+    #endif
+    END_MENU();
+  }
+#endif
+
+#if ENABLED(DUAL_X_CARRIAGE)
+
+  void menu_idex() {
+    START_MENU();
+    MENU_BACK(MSG_CONFIGURATION);
 
     MENU_ITEM(gcode, MSG_IDEX_MODE_AUTOPARK,  PSTR("M605 S1\nG28 X\nG1 X100"));
     const bool need_g28 = !(TEST(axis_known_position, Y_AXIS) && TEST(axis_known_position, Z_AXIS));
@@ -143,10 +165,6 @@ static void lcd_factory_settings() {
       : PSTR("M605 S1\nT0\nM605 S2 X200\nG28 X\nG1 X100\nM605 S3 X200")
     );
     MENU_ITEM(gcode, MSG_IDEX_MODE_FULL_CTRL, PSTR("M605 S0\nG28 X"));
-    MENU_MULTIPLIER_ITEM_EDIT_CALLBACK(float52, MSG_IDEX_X_OFFSET , &hotend_offset[X_AXIS][1], MIN(X2_HOME_POS, X2_MAX_POS) - 25.0, MAX(X2_HOME_POS, X2_MAX_POS) + 25.0, _recalc_IDEX_settings);
-    MENU_MULTIPLIER_ITEM_EDIT_CALLBACK(float52, MSG_IDEX_Y_OFFSET , &hotend_offset[Y_AXIS][1], -10.0, 10.0, _recalc_IDEX_settings);
-    MENU_MULTIPLIER_ITEM_EDIT_CALLBACK(float52, MSG_IDEX_Z_OFFSET , &hotend_offset[Z_AXIS][1], -10.0, 10.0, _recalc_IDEX_settings);
-    MENU_ITEM(gcode, MSG_IDEX_SAVE_OFFSETS, PSTR("M500"));
     END_MENU();
   }
 
@@ -154,34 +172,81 @@ static void lcd_factory_settings() {
 
 #if ENABLED(BLTOUCH)
 
+  #if ENABLED(BLTOUCH_LCD_VOLTAGE_MENU)
+    void bltouch_report() {
+      SERIAL_ECHOLNPAIR("EEPROM Last BLTouch Mode - ", (int)bltouch.last_written_mode);
+      SERIAL_ECHOLNPGM("Configuration BLTouch Mode - "
+        #if ENABLED(BLTOUCH_SET_5V_MODE)
+          "5V"
+        #else
+          "OD"
+        #endif
+      );
+      char mess[21];
+      strcpy_P(mess, PSTR("BLTouch Mode - "));
+      strcpy_P(&mess[15], bltouch.last_written_mode ? PSTR("5V") : PSTR("OD"));
+      ui.set_status(mess);
+      ui.return_to_status();
+    }
+  #endif
+
   void menu_bltouch() {
     START_MENU();
-    MENU_BACK(MSG_MAIN);
-    MENU_ITEM(gcode, MSG_BLTOUCH_RESET, PSTR("M280 P" STRINGIFY(Z_PROBE_SERVO_NR) " S" STRINGIFY(BLTOUCH_RESET)));
-    MENU_ITEM(gcode, MSG_BLTOUCH_SELFTEST, PSTR("M280 P" STRINGIFY(Z_PROBE_SERVO_NR) " S" STRINGIFY(BLTOUCH_SELFTEST)));
-    MENU_ITEM(gcode, MSG_BLTOUCH_DEPLOY, PSTR("M280 P" STRINGIFY(Z_PROBE_SERVO_NR) " S" STRINGIFY(BLTOUCH_DEPLOY)));
-    MENU_ITEM(gcode, MSG_BLTOUCH_STOW, PSTR("M280 P" STRINGIFY(Z_PROBE_SERVO_NR) " S" STRINGIFY(BLTOUCH_STOW)));
-    #if ENABLED(BLTOUCH_V3)
-      MENU_ITEM(gcode, MSG_BLTOUCH_SW_MODE, PSTR("M280 P" STRINGIFY(Z_PROBE_SERVO_NR) " S" STRINGIFY(BLTOUCH_SW_MODE)));
-      MENU_ITEM(gcode, MSG_BLTOUCH_5V_MODE, PSTR("M280 P" STRINGIFY(Z_PROBE_SERVO_NR) " S" STRINGIFY(BLTOUCH_5V_MODE)));
-      MENU_ITEM(gcode, MSG_BLTOUCH_OD_MODE, PSTR("M280 P" STRINGIFY(Z_PROBE_SERVO_NR) " S" STRINGIFY(BLTOUCH_OD_MODE)));
+    MENU_BACK(MSG_CONFIGURATION);
+    MENU_ITEM(function, MSG_BLTOUCH_RESET, bltouch._reset);
+    MENU_ITEM(function, MSG_BLTOUCH_SELFTEST, bltouch._selftest);
+    MENU_ITEM(function, MSG_BLTOUCH_DEPLOY, bltouch._deploy);
+    MENU_ITEM(function, MSG_BLTOUCH_STOW, bltouch._stow);
+    MENU_ITEM(function, MSG_BLTOUCH_SW_MODE, bltouch._set_SW_mode);
+    #if ENABLED(BLTOUCH_LCD_VOLTAGE_MENU)
+      MENU_ITEM(submenu, MSG_BLTOUCH_5V_MODE, []{
+        do_select_screen(PSTR(MSG_BLTOUCH_5V_MODE), PSTR(MSG_BUTTON_CANCEL), bltouch._set_5V_mode, ui.goto_previous_screen, PSTR(MSG_BLTOUCH_MODE_CHANGE));
+      });
+      MENU_ITEM(submenu, MSG_BLTOUCH_OD_MODE, []{
+        do_select_screen(PSTR(MSG_BLTOUCH_OD_MODE), PSTR(MSG_BUTTON_CANCEL), bltouch._set_OD_mode, ui.goto_previous_screen, PSTR(MSG_BLTOUCH_MODE_CHANGE));
+      });
+      MENU_ITEM(function, MSG_BLTOUCH_MODE_STORE, bltouch._mode_store);
+      MENU_ITEM(submenu, MSG_BLTOUCH_MODE_STORE_5V, []{
+        do_select_screen(PSTR(MSG_BLTOUCH_MODE_STORE_5V), PSTR(MSG_BUTTON_CANCEL), bltouch.mode_conv_5V, ui.goto_previous_screen, PSTR(MSG_BLTOUCH_MODE_CHANGE));
+      });
+      MENU_ITEM(submenu, MSG_BLTOUCH_MODE_STORE_OD, []{
+        do_select_screen(PSTR(MSG_BLTOUCH_MODE_STORE_OD), PSTR(MSG_BUTTON_CANCEL), bltouch.mode_conv_OD, ui.goto_previous_screen, PSTR(MSG_BLTOUCH_MODE_CHANGE));
+      });
+      MENU_ITEM(function, MSG_BLTOUCH_MODE_ECHO, bltouch_report);
     #endif
     END_MENU();
   }
 
 #endif
 
-#if ENABLED(MENU_ITEM_CASE_LIGHT)
+#if ENABLED(TOUCH_MI_PROBE)
+  void menu_touchmi() {
+    START_MENU();
+    ui.defer_status_screen();
+    MENU_BACK(MSG_CONFIGURATION);
+    MENU_ITEM(gcode, MSG_TOUCHMI_INIT, PSTR("M851 Z0\nG28\nG1 F200 Z0"));
+    MENU_ITEM(submenu, MSG_ZPROBE_ZOFFSET, lcd_babystep_zoffset);
+    MENU_ITEM(gcode, MSG_TOUCHMI_SAVE, PSTR("M500\nG1 F200 Z10"));
+    MENU_ITEM(gcode, MSG_TOUCHMI_ZTEST, PSTR("G28\nG1 F200 Z0"));
+    END_MENU();
+  }
+#endif
+
+#if ENABLED(CASE_LIGHT_MENU)
 
   #include "../../feature/caselight.h"
 
-  void menu_case_light() {
-    START_MENU();
-    MENU_BACK(MSG_MAIN);
-    MENU_ITEM_EDIT_CALLBACK(uint8, MSG_CASE_LIGHT_BRIGHTNESS, &case_light_brightness, 0, 255, update_case_light, true);
-    MENU_ITEM_EDIT_CALLBACK(bool, MSG_CASE_LIGHT, (bool*)&case_light_on, update_case_light);
-    END_MENU();
-  }
+  #if DISABLED(CASE_LIGHT_NO_BRIGHTNESS)
+
+    void menu_case_light() {
+      START_MENU();
+      MENU_BACK(MSG_CONFIGURATION);
+      MENU_ITEM_EDIT_CALLBACK(uint8, MSG_CASE_LIGHT_BRIGHTNESS, &case_light_brightness, 0, 255, update_case_light, true);
+      MENU_ITEM_EDIT_CALLBACK(bool, MSG_CASE_LIGHT, (bool*)&case_light_on, update_case_light);
+      END_MENU();
+    }
+
+  #endif
 
 #endif
 
@@ -191,7 +256,7 @@ static void lcd_factory_settings() {
 
   void menu_config_retract() {
     START_MENU();
-    MENU_BACK(MSG_CONTROL);
+    MENU_BACK(MSG_CONFIGURATION);
     #if ENABLED(FWRETRACT_AUTORETRACT)
       MENU_ITEM_EDIT_CALLBACK(bool, MSG_AUTORETRACT, &fwretract.autoretract_enabled, fwretract.refresh_autoretract);
     #endif
@@ -218,20 +283,20 @@ static void lcd_factory_settings() {
 
   void _menu_configuration_preheat_settings(const uint8_t material) {
     #if HOTENDS > 5
-      #define MINTEMP_ALL MIN(HEATER_0_MINTEMP, HEATER_1_MINTEMP, HEATER_2_MINTEMP, HEATER_3_MINTEMP, HEATER_4_MINTEMP, HEATER_5_MINTEMP)
-      #define MAXTEMP_ALL MAX(HEATER_0_MAXTEMP, HEATER_1_MAXTEMP, HEATER_2_MAXTEMP, HEATER_3_MAXTEMP, HEATER_4_MAXTEMP, HEATER_5_MAXTEMP)
+      #define MINTEMP_ALL _MIN(HEATER_0_MINTEMP, HEATER_1_MINTEMP, HEATER_2_MINTEMP, HEATER_3_MINTEMP, HEATER_4_MINTEMP, HEATER_5_MINTEMP)
+      #define MAXTEMP_ALL _MAX(HEATER_0_MAXTEMP, HEATER_1_MAXTEMP, HEATER_2_MAXTEMP, HEATER_3_MAXTEMP, HEATER_4_MAXTEMP, HEATER_5_MAXTEMP)
     #elif HOTENDS > 4
-      #define MINTEMP_ALL MIN(HEATER_0_MINTEMP, HEATER_1_MINTEMP, HEATER_2_MINTEMP, HEATER_3_MINTEMP, HEATER_4_MINTEMP)
-      #define MAXTEMP_ALL MAX(HEATER_0_MAXTEMP, HEATER_1_MAXTEMP, HEATER_2_MAXTEMP, HEATER_3_MAXTEMP, HEATER_4_MAXTEMP)
+      #define MINTEMP_ALL _MIN(HEATER_0_MINTEMP, HEATER_1_MINTEMP, HEATER_2_MINTEMP, HEATER_3_MINTEMP, HEATER_4_MINTEMP)
+      #define MAXTEMP_ALL _MAX(HEATER_0_MAXTEMP, HEATER_1_MAXTEMP, HEATER_2_MAXTEMP, HEATER_3_MAXTEMP, HEATER_4_MAXTEMP)
     #elif HOTENDS > 3
-      #define MINTEMP_ALL MIN(HEATER_0_MINTEMP, HEATER_1_MINTEMP, HEATER_2_MINTEMP, HEATER_3_MINTEMP)
-      #define MAXTEMP_ALL MAX(HEATER_0_MAXTEMP, HEATER_1_MAXTEMP, HEATER_2_MAXTEMP, HEATER_3_MAXTEMP)
+      #define MINTEMP_ALL _MIN(HEATER_0_MINTEMP, HEATER_1_MINTEMP, HEATER_2_MINTEMP, HEATER_3_MINTEMP)
+      #define MAXTEMP_ALL _MAX(HEATER_0_MAXTEMP, HEATER_1_MAXTEMP, HEATER_2_MAXTEMP, HEATER_3_MAXTEMP)
     #elif HOTENDS > 2
-      #define MINTEMP_ALL MIN(HEATER_0_MINTEMP, HEATER_1_MINTEMP, HEATER_2_MINTEMP)
-      #define MAXTEMP_ALL MAX(HEATER_0_MAXTEMP, HEATER_1_MAXTEMP, HEATER_2_MAXTEMP)
+      #define MINTEMP_ALL _MIN(HEATER_0_MINTEMP, HEATER_1_MINTEMP, HEATER_2_MINTEMP)
+      #define MAXTEMP_ALL _MAX(HEATER_0_MAXTEMP, HEATER_1_MAXTEMP, HEATER_2_MAXTEMP)
     #elif HOTENDS > 1
-      #define MINTEMP_ALL MIN(HEATER_0_MINTEMP, HEATER_1_MINTEMP)
-      #define MAXTEMP_ALL MAX(HEATER_0_MAXTEMP, HEATER_1_MAXTEMP)
+      #define MINTEMP_ALL _MIN(HEATER_0_MINTEMP, HEATER_1_MINTEMP)
+      #define MAXTEMP_ALL _MAX(HEATER_0_MAXTEMP, HEATER_1_MAXTEMP)
     #else
       #define MINTEMP_ALL HEATER_0_MINTEMP
       #define MAXTEMP_ALL HEATER_0_MAXTEMP
@@ -284,12 +349,20 @@ void menu_configuration() {
       MENU_ITEM(submenu, MSG_DELTA_CALIBRATE, menu_delta_calibrate);
     #endif
 
+    #if HAS_HOTEND_OFFSET
+      MENU_ITEM(submenu, MSG_OFFSETS_MENU, menu_tool_offsets);
+    #endif
+
     #if ENABLED(DUAL_X_CARRIAGE)
-      MENU_ITEM(submenu, MSG_IDEX_MENU, menu_IDEX);
+      MENU_ITEM(submenu, MSG_IDEX_MENU, menu_idex);
     #endif
 
     #if ENABLED(BLTOUCH)
       MENU_ITEM(submenu, MSG_BLTOUCH, menu_bltouch);
+    #endif
+
+    #if ENABLED(TOUCH_MI_PROBE)
+      MENU_ITEM(submenu, MSG_TOUCHMI_PROBE, menu_touchmi);
     #endif
   }
 
@@ -303,11 +376,13 @@ void menu_configuration() {
   //
   // Set Case light on/off/brightness
   //
-  #if ENABLED(MENU_ITEM_CASE_LIGHT)
-    if (PWM_PIN(CASE_LIGHT_PIN))
-      MENU_ITEM(submenu, MSG_CASE_LIGHT, menu_case_light);
-    else
-      MENU_ITEM_EDIT_CALLBACK(bool, MSG_CASE_LIGHT, (bool*)&case_light_on, update_case_light);
+  #if ENABLED(CASE_LIGHT_MENU)
+    #if DISABLED(CASE_LIGHT_NO_BRIGHTNESS)
+      if (PWM_PIN(CASE_LIGHT_PIN))
+        MENU_ITEM(submenu, MSG_CASE_LIGHT, menu_case_light);
+      else
+    #endif
+        MENU_ITEM_EDIT_CALLBACK(bool, MSG_CASE_LIGHT, (bool*)&case_light_on, update_case_light);
   #endif
 
   #if HAS_LCD_CONTRAST

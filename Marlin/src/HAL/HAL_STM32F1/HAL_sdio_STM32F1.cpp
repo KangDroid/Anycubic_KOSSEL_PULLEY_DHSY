@@ -1,10 +1,10 @@
 /**
  * Marlin 3D Printer Firmware
- * Copyright (C) 2019 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
+ * Copyright (c) 2019 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
  *
  * Based on Sprinter and grbl.
- * Copyright (C) 2011 Camiel Gubbels / Erik van der Zalm
- * Copyright (C) 2017 Victor Perez
+ * Copyright (c) 2011 Camiel Gubbels / Erik van der Zalm
+ * Copyright (c) 2017 Victor Perez
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,7 +21,11 @@
  *
  */
 
-#if defined(__STM32F1__) && (defined(STM32_HIGH_DENSITY) || defined(STM32_XL_DENSITY))
+#ifdef ARDUINO_ARCH_STM32F1
+
+#include <libmaple/stm32.h>
+
+#if defined(STM32_HIGH_DENSITY) || defined(STM32_XL_DENSITY)
 
 #include "HAL_sdio_STM32F1.h"
 
@@ -36,7 +40,7 @@ bool SDIO_Init(void) {
 
   dma_init(SDIO_DMA_DEV);
   dma_disable(SDIO_DMA_DEV, SDIO_DMA_CHANNEL);
-  dma_set_priority(SDIO_DMA_DEV, SDIO_DMA_CHANNEL, DMA_PRIORITY_VERY_HIGH);
+  dma_set_priority(SDIO_DMA_DEV, SDIO_DMA_CHANNEL, DMA_PRIORITY_MEDIUM);
 
   if (!SDIO_CmdGoIdleState()) return false;
   if (!SDIO_CmdGoIdleState()) return false; /* Hotplugged cards tends to miss first CMD0, so give them a second chance. */
@@ -76,7 +80,7 @@ bool SDIO_Init(void) {
   return true;
 }
 
-bool SDIO_ReadBlock(uint32_t blockAddress, uint8_t *data) {
+bool SDIO_ReadBlock_DMA(uint32_t blockAddress, uint8_t *data) {
   if (SDIO_GetCardState() != SDIO_CARD_TRANSFER) return false;
   if (blockAddress >= SdCard.LogBlockNbr) return false;
   if ((0x03 & (uint32_t)data)) return false; // misaligned data
@@ -100,12 +104,24 @@ bool SDIO_ReadBlock(uint32_t blockAddress, uint8_t *data) {
 
   dma_disable(SDIO_DMA_DEV, SDIO_DMA_CHANNEL);
 
+  if (SDIO->STA & SDIO_STA_RXDAVL) {
+    while (SDIO->STA & SDIO_STA_RXDAVL) (void) SDIO->FIFO;
+    SDIO_CLEAR_FLAG(SDIO_ICR_CMD_FLAGS | SDIO_ICR_DATA_FLAGS);
+    return false;
+  }
+
   if (SDIO_GET_FLAG(SDIO_STA_TRX_ERROR_FLAGS)) {
     SDIO_CLEAR_FLAG(SDIO_ICR_CMD_FLAGS | SDIO_ICR_DATA_FLAGS);
     return false;
   }
   SDIO_CLEAR_FLAG(SDIO_ICR_CMD_FLAGS | SDIO_ICR_DATA_FLAGS);
   return true;
+}
+
+bool SDIO_ReadBlock(uint32_t blockAddress, uint8_t *data) {
+  uint32_t retries = 3;
+  while (retries--) if (SDIO_ReadBlock_DMA(blockAddress, data)) return true;
+  return false;
 }
 
 bool SDIO_WriteBlock(uint32_t blockAddress, const uint8_t *data) {
@@ -264,4 +280,5 @@ bool SDIO_GetCmdResp7(void) {
   return true;
 }
 
-#endif // __STM32F1__ && (STM32_HIGH_DENSITY || STM32_XL_DENSITY)
+#endif // STM32_HIGH_DENSITY || STM32_XL_DENSITY
+#endif // ARDUINO_ARCH_STM32F1

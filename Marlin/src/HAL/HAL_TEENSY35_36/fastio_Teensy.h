@@ -1,9 +1,9 @@
 /**
  * Marlin 3D Printer Firmware
- * Copyright (C) 2019 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
+ * Copyright (c) 2019 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
  *
  * Based on Sprinter and grbl.
- * Copyright (C) 2011 Camiel Gubbels / Erik van der Zalm
+ * Copyright (c) 2011 Camiel Gubbels / Erik van der Zalm
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -66,12 +66,11 @@
   GPIO_BITBAND(CORE_PIN ## P ## _DDRREG , CORE_PIN ## P ## _BIT) = 0; \
 }while(0)
 
-#define _GET_INPUT(P)   ((CORE_PIN ## P ## _DDRREG & CORE_PIN ## P ## _BITMASK) == 0)
-#define _GET_OUTPUT(P)  ((CORE_PIN ## P ## _DDRREG & CORE_PIN ## P ## _BITMASK) == 0)
+#define _IS_INPUT(P)    ((CORE_PIN ## P ## _DDRREG & CORE_PIN ## P ## _BITMASK) == 0)
+#define _IS_OUTPUT(P)   ((CORE_PIN ## P ## _DDRREG & CORE_PIN ## P ## _BITMASK) == 0)
 
 #define READ(IO)              _READ(IO)
 
-#define WRITE_VAR(IO,V)       _WRITE_VAR(IO,V)
 #define WRITE(IO,V)           _WRITE(IO,V)
 #define TOGGLE(IO)            _TOGGLE(IO)
 
@@ -80,8 +79,8 @@
 #define SET_OUTPUT(IO)        _SET_OUTPUT(IO)
 #define SET_PWM(IO)            SET_OUTPUT(IO)
 
-#define GET_INPUT(IO)         _GET_INPUT(IO)
-#define GET_OUTPUT(IO)        _GET_OUTPUT(IO)
+#define IS_INPUT(IO)          _IS_INPUT(IO)
+#define IS_OUTPUT(IO)         _IS_OUTPUT(IO)
 
 #define OUT_WRITE(IO,V)       do{ SET_OUTPUT(IO); WRITE(IO,V); }while(0)
 
@@ -90,7 +89,6 @@
 #define extDigitalWrite(IO,V) digitalWrite(IO,V)
 
 #define PWM_PIN(P)            digitalPinHasPWM(P)
-#define USEABLE_HARDWARE_PWM(P) PWM_PIN(P)
 
 /**
  * Ports, functions, and pins

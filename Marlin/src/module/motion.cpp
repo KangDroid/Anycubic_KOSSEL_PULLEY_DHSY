@@ -1,9 +1,9 @@
 /**
  * Marlin 3D Printer Firmware
- * Copyright (C) 2019 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
+ * Copyright (c) 2019 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
  *
  * Based on Sprinter and grbl.
- * Copyright (C) 2011 Camiel Gubbels / Erik van der Zalm
+ * Copyright (c) 2011 Camiel Gubbels / Erik van der Zalm
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -61,6 +61,10 @@
 
 #if ENABLED(FWRETRACT)
   #include "../feature/fwretract.h"
+#endif
+
+#if ENABLED(BABYSTEP_DISPLAY_TOTAL)
+  #include "../feature/babystep.h"
 #endif
 
 #define DEBUG_OUT ENABLED(DEBUG_LEVELING_FEATURE)
@@ -121,7 +125,7 @@ float destination[XYZE]; // = { 0 }
     );
     LOOP_XYZ(i) HOTEND_LOOP() hotend_offset[i][e] = tmp[i][e];
     #if ENABLED(DUAL_X_CARRIAGE)
-      hotend_offset[X_AXIS][1] = MAX(X2_HOME_POS, X2_MAX_POS);
+      hotend_offset[X_AXIS][1] = _MAX(X2_HOME_POS, X2_MAX_POS);
     #endif
   }
 #endif
@@ -469,7 +473,7 @@ void clean_up_after_endstop_or_probe_move() {
       if (axis == X_AXIS) {
 
         // In Dual X mode hotend_offset[X] is T1's home position
-        const float dual_max_x = MAX(hotend_offset[X_AXIS][1], X2_MAX_POS);
+        const float dual_max_x = _MAX(hotend_offset[X_AXIS][1], X2_MAX_POS);
 
         if (new_tool_index != 0) {
           // T1 can move from X2_MIN_POS to X2_MAX_POS or X2 home position (whichever is larger)
@@ -480,7 +484,7 @@ void clean_up_after_endstop_or_probe_move() {
           // In Duplication Mode, T0 can move as far left as X1_MIN_POS
           // but not so far to the right that T1 would move past the end
           soft_endstop[X_AXIS].min = X1_MIN_POS;
-          soft_endstop[X_AXIS].max = MIN(X1_MAX_POS, dual_max_x - duplicate_extruder_x_offset);
+          soft_endstop[X_AXIS].max = _MIN(X1_MAX_POS, dual_max_x - duplicate_extruder_x_offset);
         }
         else {
           // In other modes, T0 can move from X1_MIN_POS to X1_MAX_POS
@@ -503,7 +507,7 @@ void clean_up_after_endstop_or_probe_move() {
         case X_AXIS:
         case Y_AXIS:
           // Get a minimum radius for clamping
-          delta_max_radius = MIN(ABS(MAX(soft_endstop[X_AXIS].min, soft_endstop[Y_AXIS].min)), soft_endstop[X_AXIS].max, soft_endstop[Y_AXIS].max);
+          delta_max_radius = _MIN(ABS(_MAX(soft_endstop[X_AXIS].min, soft_endstop[Y_AXIS].min)), soft_endstop[X_AXIS].max, soft_endstop[Y_AXIS].max);
           delta_max_radius_2 = sq(delta_max_radius);
           break;
         case Z_AXIS:
@@ -859,10 +863,9 @@ void clean_up_after_endstop_or_probe_move() {
 #if HAS_DUPLICATION_MODE
   bool extruder_duplication_enabled,
        mirrored_duplication_mode;
-#endif
-
-#if ENABLED(MULTI_NOZZLE_DUPLICATION) && HOTENDS > 2
-  uint8_t duplication_e_mask; // = 0
+  #if ENABLED(MULTI_NOZZLE_DUPLICATION)
+    uint8_t duplication_e_mask; // = 0
+  #endif
 #endif
 
 #if ENABLED(DUAL_X_CARRIAGE)
@@ -979,9 +982,21 @@ void prepare_move_to_destination() {
           }
         #endif // PREVENT_COLD_EXTRUSION
         #if ENABLED(PREVENT_LENGTHY_EXTRUDE)
-          if (ABS(destination[E_AXIS] - current_position[E_AXIS]) * planner.e_factor[active_extruder] > (EXTRUDE_MAXLENGTH)) {
-            current_position[E_AXIS] = destination[E_AXIS]; // Behave as if the move really took place, but ignore E part
-            SERIAL_ECHO_MSG(MSG_ERR_LONG_EXTRUDE_STOP);
+          const float e_delta = ABS(destination[E_AXIS] - current_position[E_AXIS]) * planner.e_factor[active_extruder];
+          if (e_delta > (EXTRUDE_MAXLENGTH)) {
+            #if ENABLED(MIXING_EXTRUDER)
+              bool ignore_e = false;
+              float collector[MIXING_STEPPERS];
+              mixer.refresh_collector(1.0, mixer.get_current_vtool(), collector);
+              MIXER_STEPPER_LOOP(e)
+                if (e_delta * collector[e] > (EXTRUDE_MAXLENGTH)) { ignore_e = true; break; }
+            #else
+              constexpr bool ignore_e = true;
+            #endif
+            if (ignore_e) {
+              current_position[E_AXIS] = destination[E_AXIS]; // Behave as if the move really took place, but ignore E part
+              SERIAL_ECHO_MSG(MSG_ERR_LONG_EXTRUDE_STOP);
+            }
           }
         #endif // PREVENT_LENGTHY_EXTRUDE
       }
@@ -1317,6 +1332,14 @@ void set_axis_is_at_home(const AxisEnum axis) {
     }
   #endif
 
+  #if ENABLED(I2C_POSITION_ENCODERS)
+    I2CPEM.homed(axis);
+  #endif
+
+  #if ENABLED(BABYSTEP_DISPLAY_TOTAL)
+    babystep.reset_total(axis);
+  #endif
+
   if (DEBUGGING(LEVELING)) {
     #if HAS_HOME_OFFSET
       DEBUG_ECHOLNPAIR("> home_offset[", axis_codes[axis], "] = ", home_offset[axis]);
@@ -1324,10 +1347,6 @@ void set_axis_is_at_home(const AxisEnum axis) {
     DEBUG_POS("", current_position);
     DEBUG_ECHOLNPAIR("<<< set_axis_is_at_home(", axis_codes[axis], ")");
   }
-
-  #if ENABLED(I2C_POSITION_ENCODERS)
-    I2CPEM.homed(axis);
-  #endif
 }
 
 /**
@@ -1403,8 +1422,7 @@ void homeaxis(const AxisEnum axis) {
   if (DEBUGGING(LEVELING)) DEBUG_ECHOLNPGM("Home 1 Fast:");
 
   #if HOMING_Z_WITH_PROBE && ENABLED(BLTOUCH)
-    // BLTOUCH needs to be deployed every time
-    if (axis == Z_AXIS && bltouch.deploy()) return;
+    if (axis == Z_AXIS && bltouch.deploy()) return; // The initial DEPLOY
   #endif
 
   do_homing_move(axis, 1.5f * max_length(
@@ -1416,15 +1434,14 @@ void homeaxis(const AxisEnum axis) {
     ) * axis_home_dir
   );
 
-  #if HOMING_Z_WITH_PROBE && ENABLED(BLTOUCH)
-    // BLTOUCH needs to be stowed after trigger to rearm itself
-    if (axis == Z_AXIS) bltouch.stow();
+  #if HOMING_Z_WITH_PROBE && ENABLED(BLTOUCH) && DISABLED(BLTOUCH_HS_MODE)
+    if (axis == Z_AXIS) bltouch.stow(); // Intermediate STOW (in LOW SPEED MODE)
   #endif
 
   // When homing Z with probe respect probe clearance
   const float bump = axis_home_dir * (
     #if HOMING_Z_WITH_PROBE
-      (axis == Z_AXIS && (Z_HOME_BUMP_MM)) ? MAX(Z_CLEARANCE_BETWEEN_PROBES, Z_HOME_BUMP_MM) :
+      (axis == Z_AXIS && (Z_HOME_BUMP_MM)) ? _MAX(Z_CLEARANCE_BETWEEN_PROBES, Z_HOME_BUMP_MM) :
     #endif
     home_bump_mm(axis)
   );
@@ -1442,16 +1459,14 @@ void homeaxis(const AxisEnum axis) {
     // Slow move towards endstop until triggered
     if (DEBUGGING(LEVELING)) DEBUG_ECHOLNPGM("Home 2 Slow:");
 
-    #if HOMING_Z_WITH_PROBE && ENABLED(BLTOUCH)
-      // BLTOUCH needs to be deployed every time
-      if (axis == Z_AXIS && bltouch.deploy()) return;
+    #if HOMING_Z_WITH_PROBE && ENABLED(BLTOUCH) && DISABLED(BLTOUCH_HS_MODE)
+      if (axis == Z_AXIS && bltouch.deploy()) return; // Intermediate DEPLOY (in LOW SPEED MODE)
     #endif
 
     do_homing_move(axis, 2 * bump, get_homing_bump_feedrate(axis));
 
     #if HOMING_Z_WITH_PROBE && ENABLED(BLTOUCH)
-      // BLTOUCH needs to be stowed after trigger to rearm itself
-      if (axis == Z_AXIS) bltouch.stow();
+      if (axis == Z_AXIS) bltouch.stow(); // The final STOW
     #endif
   }
 

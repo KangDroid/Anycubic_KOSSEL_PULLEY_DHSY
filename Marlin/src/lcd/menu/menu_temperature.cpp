@@ -1,9 +1,9 @@
 /**
  * Marlin 3D Printer Firmware
- * Copyright (C) 2019 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
+ * Copyright (c) 2019 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
  *
  * Based on Sprinter and grbl.
- * Copyright (C) 2011 Camiel Gubbels / Erik van der Zalm
+ * Copyright (c) 2011 Camiel Gubbels / Erik van der Zalm
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -48,7 +48,7 @@ uint8_t MarlinUI::preheat_fan_speed[2];
 //
 
 void _lcd_preheat(const int16_t endnum, const int16_t temph, const int16_t tempb, const uint8_t fan) {
-  if (temph > 0) thermalManager.setTargetHotend(MIN(heater_maxtemp[endnum] - 15, temph), endnum);
+  if (temph > 0) thermalManager.setTargetHotend(_MIN(heater_maxtemp[endnum] - 15, temph), endnum);
   #if HAS_HEATED_BED
     if (tempb >= 0) thermalManager.setTargetBed(tempb);
   #else
@@ -303,47 +303,6 @@ void _lcd_preheat(const int16_t endnum, const int16_t temph, const int16_t tempb
 
 #endif // HAS_TEMP_HOTEND || HAS_HEATED_BED
 
-#if ENABLED(SPINDLE_LASER_ENABLE)
-
-  extern uint8_t spindle_laser_power;
-  bool spindle_laser_enabled();
-  void set_spindle_laser_enabled(const bool enabled);
-  #if ENABLED(SPINDLE_LASER_PWM)
-    void update_spindle_laser_power();
-  #endif
-
-  inline void _lcd_spindle_laser_off() { set_spindle_laser_enabled(false); }
-  inline void _lcd_spindle_laser_on(const bool is_M4) {
-    #if SPINDLE_DIR_CHANGE
-      set_spindle_direction(is_M4);
-    #endif
-    set_spindle_laser_enabled(true);
-  }
-  inline void _lcd_spindle_laser_on() { _lcd_spindle_laser_on(false); }
-  #if SPINDLE_DIR_CHANGE
-    inline void _lcd_spindle_on_reverse() { _lcd_spindle_laser_on(true); }
-  #endif
-
-  void menu_spindle_laser() {
-    START_MENU();
-    MENU_BACK(MSG_MAIN);
-    if (spindle_laser_enabled()) {
-      #if ENABLED(SPINDLE_LASER_PWM)
-        MENU_ITEM_EDIT_CALLBACK(int3, MSG_LASER_POWER, &spindle_laser_power, SPEED_POWER_MIN, SPEED_POWER_MAX, update_spindle_laser_power);
-      #endif
-      MENU_ITEM(function, MSG_LASER_OFF, _lcd_spindle_laser_off);
-    }
-    else {
-      MENU_ITEM(function, MSG_LASER_ON, _lcd_spindle_laser_on);
-      #if SPINDLE_DIR_CHANGE
-        MENU_ITEM(function, MSG_SPINDLE_REVERSE, _lcd_spindle_on_reverse);
-      #endif
-    }
-    END_MENU();
-  }
-
-#endif // SPINDLE_LASER_ENABLE
-
 void menu_temperature() {
   START_MENU();
   MENU_BACK(MSG_MAIN);
@@ -395,36 +354,26 @@ void menu_temperature() {
   //
   #if FAN_COUNT > 0
     #if HAS_FAN0
-      MENU_MULTIPLIER_ITEM_EDIT_CALLBACK(uint8, MSG_FAN_SPEED FAN_SPEED_1_SUFFIX, &thermalManager.lcd_tmpfan_speed[0], 0, 255, thermalManager.lcd_setFanSpeed0);
+      MENU_MULTIPLIER_ITEM_EDIT_CALLBACK(percent, MSG_FAN_SPEED FAN_SPEED_1_SUFFIX, &thermalManager.lcd_tmpfan_speed[0], 0, 255, thermalManager.lcd_setFanSpeed0);
       #if ENABLED(EXTRA_FAN_SPEED)
-        MENU_MULTIPLIER_ITEM_EDIT(uint8, MSG_EXTRA_FAN_SPEED FAN_SPEED_1_SUFFIX, &thermalManager.new_fan_speed[0], 3, 255);
+        MENU_MULTIPLIER_ITEM_EDIT(percent, MSG_EXTRA_FAN_SPEED FAN_SPEED_1_SUFFIX, &thermalManager.new_fan_speed[0], 3, 255);
       #endif
     #endif
     #if HAS_FAN1 || (ENABLED(SINGLENOZZLE) && EXTRUDERS > 1)
-      MENU_MULTIPLIER_ITEM_EDIT_CALLBACK(uint8, MSG_FAN_SPEED " 2", &thermalManager.lcd_tmpfan_speed[1], 0, 255, thermalManager.lcd_setFanSpeed1);
+      MENU_MULTIPLIER_ITEM_EDIT_CALLBACK(percent, MSG_FAN_SPEED " 2", &thermalManager.lcd_tmpfan_speed[1], 0, 255, thermalManager.lcd_setFanSpeed1);
       #if ENABLED(EXTRA_FAN_SPEED)
-        MENU_MULTIPLIER_ITEM_EDIT(uint8, MSG_EXTRA_FAN_SPEED " 2", &thermalManager.new_fan_speed[1], 3, 255);
+        MENU_MULTIPLIER_ITEM_EDIT(percent, MSG_EXTRA_FAN_SPEED " 2", &thermalManager.new_fan_speed[1], 3, 255);
       #endif
     #endif
     #if HAS_FAN2 || (ENABLED(SINGLENOZZLE) && EXTRUDERS > 2)
-      MENU_MULTIPLIER_ITEM_EDIT_CALLBACK(uint8, MSG_FAN_SPEED " 3", &thermalManager.lcd_tmpfan_speed[2], 0, 255, thermalManager.lcd_setFanSpeed2);
+      MENU_MULTIPLIER_ITEM_EDIT_CALLBACK(percent, MSG_FAN_SPEED " 3", &thermalManager.lcd_tmpfan_speed[2], 0, 255, thermalManager.lcd_setFanSpeed2);
       #if ENABLED(EXTRA_FAN_SPEED)
-        MENU_MULTIPLIER_ITEM_EDIT(uint8, MSG_EXTRA_FAN_SPEED " 3", &thermalManager.new_fan_speed[2], 3, 255);
+        MENU_MULTIPLIER_ITEM_EDIT(percent, MSG_EXTRA_FAN_SPEED " 3", &thermalManager.new_fan_speed[2], 3, 255);
       #endif
     #endif
   #endif // FAN_COUNT > 0
 
   #if HAS_TEMP_HOTEND
-
-    //
-    // Cooldown
-    //
-    bool has_heat = false;
-    HOTEND_LOOP() if (thermalManager.temp_hotend[HOTEND_INDEX].target) { has_heat = true; break; }
-    #if HAS_TEMP_BED
-      if (thermalManager.temp_bed.target) has_heat = true;
-    #endif
-    if (has_heat) MENU_ITEM(function, MSG_COOLDOWN, lcd_cooldown);
 
     //
     // Preheat for Material 1 and 2
@@ -437,11 +386,17 @@ void menu_temperature() {
       MENU_ITEM(function, MSG_PREHEAT_2, lcd_preheat_m2_e0_only);
     #endif
 
-  #endif // HAS_TEMP_HOTEND
+    //
+    // Cooldown
+    //
+    bool has_heat = false;
+    HOTEND_LOOP() if (thermalManager.temp_hotend[HOTEND_INDEX].target) { has_heat = true; break; }
+    #if HAS_TEMP_BED
+      if (thermalManager.temp_bed.target) has_heat = true;
+    #endif
+    if (has_heat) MENU_ITEM(function, MSG_COOLDOWN, lcd_cooldown);
 
-  #if ENABLED(SPINDLE_LASER_ENABLE)
-    MENU_ITEM(submenu, MSG_LASER_MENU, menu_spindle_laser);
-  #endif
+  #endif // HAS_TEMP_HOTEND
 
   END_MENU();
 }

@@ -1,9 +1,9 @@
 /**
  * Marlin 3D Printer Firmware
- * Copyright (C) 2019 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
+ * Copyright (c) 2019 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
  *
  * Based on Sprinter and grbl.
- * Copyright (C) 2011 Camiel Gubbels / Erik van der Zalm
+ * Copyright (c) 2011 Camiel Gubbels / Erik van der Zalm
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,12 +27,6 @@ typedef struct {
   int8_t x_index, y_index;
   float distance; // When populated, the distance from the search location
 } mesh_index_pair;
-
-#if ENABLED(G26_MESH_VALIDATION)
-  extern bool g26_debug_flag;
-#else
-  constexpr bool g26_debug_flag = false;
-#endif
 
 #if ENABLED(PROBE_MANUALLY)
   extern bool g29_in_progress;
