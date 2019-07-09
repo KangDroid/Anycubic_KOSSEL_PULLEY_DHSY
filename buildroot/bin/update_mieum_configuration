@@ -71,5 +71,5 @@ opt_enable HOMING_FEEDRATE_ADJUSTABLE
 opt_enable FAKE_HOTEND_TEMPERATURE_SUPPORTED
 opt_enable FAKE_BED_TEMPERATURE_SUPPORTED
 
-cp Marlin/Configuration* Marlin/src/config/examples/Mieum/
+cp Marlin/Configuration* config/examples/Mieum/
 restore_configs

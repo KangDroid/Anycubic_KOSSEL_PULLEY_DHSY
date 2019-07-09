@@ -74,5 +74,5 @@ opt_set FILAMENT_CHANGE_FAST_LOAD_ACCEL 15
 #pins_set RAMPS BTN_EN1 31
 #pins_set RAMPS BTN_EN2 33
 #pins_set RAMPS BTN_ENC 35
-cp Marlin/Configuration* Marlin/src/config/examples/Lugo_SE/
+cp Marlin/Configuration* config/examples/Lugo_SE/
 restore_configs

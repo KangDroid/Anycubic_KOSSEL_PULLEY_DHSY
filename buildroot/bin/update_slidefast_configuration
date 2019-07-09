@@ -70,5 +70,5 @@ opt_set Y_DRIVER_TYPE "TMC2100"
 opt_set Z_DRIVER_TYPE "TMC2100"
 opt_set E0_DRIVER_TYPE "TMC2208_STANDALONE"
 
-cp Marlin/Configuration* Marlin/src/config/examples/SlideFast/
+cp Marlin/Configuration* config/examples/SlideFast/
 restore_configs

@@ -38,5 +38,5 @@ opt_enable SDSUPPORT
 opt_enable REPRAP_DISCOUNT_SMART_CONTROLLER
 opt_set HOMING_FEEDRATE_XY "(100*60)"
 opt_enable Z_DUAL_STEPPER_DRIVERS
-cp Marlin/Configuration* Marlin/src/config/examples/AnetA8/
+cp Marlin/Configuration* config/examples/AnetA8/
 restore_configs

@@ -73,5 +73,5 @@ opt_set THERMAL_PROTECTION_BED_HYSTERESIS 15
 opt_set THERMAL_PROTECTION_BED_PERIOD 120
 opt_set WATCH_BED_TEMP_PERIOD 120
 
-cp Marlin/Configuration* Marlin/src/config/examples/Corem/
+cp Marlin/Configuration* config/examples/Corem/
 restore_configs

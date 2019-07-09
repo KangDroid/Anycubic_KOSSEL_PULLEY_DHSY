@@ -38,5 +38,5 @@ opt_enable REPRAP_DISCOUNT_SMART_CONTROLLER
 opt_enable EMERGENCY_PARSER
 opt_enable ADVANCED_PAUSE_FEATURE
 
-cp Marlin/Configuration* Marlin/src/config/examples/Core200/
+cp Marlin/Configuration* config/examples/Core200/
 restore_configs
