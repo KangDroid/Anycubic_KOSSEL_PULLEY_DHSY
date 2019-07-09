@@ -280,6 +280,10 @@ class Temperature {
       static int bed_fake_temperature_enabled;
     #endif
 
+    #if ENABLED(ENABLE_ADJUSTABLE_HEATER_MAX_TEMP)
+      static int16_t maxtemp_config;
+    #endif
+
     #if HAS_HEATED_BED
       static bed_info_t temp_bed;
     #endif

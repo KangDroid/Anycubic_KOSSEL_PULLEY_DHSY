@@ -117,6 +117,10 @@ Temperature thermalManager;
   int Temperature::hotend_fake_temperature_enabled = 0;
 #endif
 
+#if ENABLED(ENABLE_ADJUSTABLE_HEATER_MAX_TEMP)
+  int16_t Temperature::maxtemp_config = 275;
+#endif
+
 #if ENABLED(FAKE_BED_TEMPERATURE_SUPPORTED)
   float Temperature::bed_fake_temperature_value = 0.0;
   int Temperature::bed_fake_temperature_enabled = 0;
@@ -1555,7 +1559,6 @@ void Temperature::updateTemperaturesFromRawValues() {
   #define INIT_CHAMBER_AUTO_FAN_PIN(P) SET_OUTPUT(P)
 #endif
 
-
 /**
  * Initialize the temperature manager
  * The manager is implemented by periodic calls to manage_heater()
@@ -1701,11 +1704,19 @@ void Temperature::init() {
       while (analog_to_celsius_hotend(temp_range[NR].raw_min, NR) < HEATER_ ##NR## _MINTEMP) \
         temp_range[NR].raw_min += TEMPDIR(NR) * (OVERSAMPLENR); \
     }while(0)
-    #define _TEMP_MAX_E(NR) do{ \
-      temp_range[NR].maxtemp = HEATER_ ##NR## _MAXTEMP; \
-      while (analog_to_celsius_hotend(temp_range[NR].raw_max, NR) > HEATER_ ##NR## _MAXTEMP) \
-        temp_range[NR].raw_max -= TEMPDIR(NR) * (OVERSAMPLENR); \
-    }while(0)
+    #if ENABLED(ENABLE_ADJUSTABLE_HEATER_MAX_TEMP)
+      #define _TEMP_MAX_E(NR) do{ \
+        temp_range[NR].maxtemp = maxtemp_config; \
+        while (analog_to_celsius_hotend(temp_range[NR].raw_max, NR) > maxtemp_config) \
+          temp_range[NR].raw_max -= TEMPDIR(NR) * (OVERSAMPLENR); \
+      }while(0)
+    #else
+      #define _TEMP_MAX_E(NR) do{ \
+        temp_range[NR].maxtemp = HEATER_ ##NR## _MAXTEMP; \
+        while (analog_to_celsius_hotend(temp_range[NR].raw_max, NR) > HEATER_ ##NR## _MAXTEMP) \
+          temp_range[NR].raw_max -= TEMPDIR(NR) * (OVERSAMPLENR); \
+      }while(0)
+    #endif
 
     #ifdef HEATER_0_MINTEMP
       _TEMP_MIN_E(0);

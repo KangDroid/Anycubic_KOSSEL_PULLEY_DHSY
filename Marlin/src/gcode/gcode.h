@@ -901,6 +901,10 @@ private:
     static void M983();
   #endif
 
+  #if ENABLED(ENABLE_ADJUSTABLE_HEATER_MAX_TEMP)
+    static void M987();
+  #endif
+
   #if ENABLED(MAX7219_GCODE)
     static void M7219();
   #endif
