@@ -2179,3 +2179,10 @@
 
 // Allow servo angle to be edited and saved to EEPROM
 //#define EDITABLE_SERVO_ANGLES
+
+/**
+ *
+ * Developer Features: DO NOT ENABLE IF YOU DON'T KNOW WHAT YOU ARE DOING!!!
+ *
+ */
+#define ENABLE_ADJUSTABLE_HEATER_MAX_TEMP
