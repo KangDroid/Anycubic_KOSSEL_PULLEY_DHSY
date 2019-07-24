@@ -65,7 +65,7 @@ ARDUINO_INSTALL_DIR  ?= /Applications/Arduino.app/Contents/Resources/Java
 ARDUINO_VERSION      ?= 106
 
 # The installed Libraries are in the User folder
-ARDUINO_USER_DIR ?= /Users/kangdroid/Documents/Arduino/libraries 
+ARDUINO_USER_DIR ?= /Users/$(shell whoami)/Documents/Arduino/libraries 
 
 # You can optionally set a path to the avr-gcc tools. Requires a trailing slash. (ex: /usr/local/avr-gcc/bin)
 AVR_TOOLS_PATH = /Applications/Arduino.app/Contents/Java/hardware/tools/avr/bin/
@@ -502,10 +502,10 @@ VPATH += $(ARDUINO_USER_DIR)/libraries/U8glib/clib
 # KD Edition
 VPATH += /Applications/Arduino.app/Contents/Java/hardware/arduino/avr/libraries/SPI/src/
 VPATH += /Applications/Arduino.app/Contents/Java/libraries/LiquidCrystal/src/
-VPATH += /Users/kangdroid/Documents/Arduino/libraries/U8glib
+VPATH += /Users/$(shell whoami)/Documents/Arduino/libraries/U8glib
 VPATH += /Applications/Arduino.app/Contents/Java/hardware/arduino/avr/cores/arduino
 VPATH += /Applications/Arduino.app/Contents/Java/hardware/arduino/avr/variants/mega
-VPATH += /Users/kangdroid/Documents/Arduino/libraries/U8glib/utility
+VPATH += /Users/$(shell whoami)/Documents/Arduino/libraries/U8glib/utility
 
 ifeq ($(HARDWARE_VARIANT), $(filter $(HARDWARE_VARIANT),arduino Teensy Sanguino))
 VPATH += $(ARDUINO_INSTALL_DIR)/hardware/marlin/avr/libraries/LiquidCrystal/src
