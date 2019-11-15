@@ -61,14 +61,14 @@ HARDWARE_MOTHERBOARD ?= 1010
 
 # Arduino source install directory, and version number
 # On most linuxes this will be /usr/share/arduino
-ARDUINO_INSTALL_DIR  ?= /Applications/Arduino.app/Contents/Resources/Java
+ARDUINO_INSTALL_DIR  ?= /home/kangdroid/arduino-1.8.10
 ARDUINO_VERSION      ?= 106
 
 # The installed Libraries are in the User folder
 ARDUINO_USER_DIR ?= /Users/$(shell whoami)/Documents/Arduino/libraries 
 
 # You can optionally set a path to the avr-gcc tools. Requires a trailing slash. (ex: /usr/local/avr-gcc/bin)
-AVR_TOOLS_PATH = /Applications/Arduino.app/Contents/Java/hardware/tools/avr/bin/
+AVR_TOOLS_PATH = /home/kangdroid/arduino-1.8.10/hardware/tools/avr/bin/
 
 #Programmer configuration
 UPLOAD_RATE        ?= 115200
@@ -510,12 +510,12 @@ VPATH += $(ARDUINO_USER_DIR)/libraries/U8glib
 VPATH += $(ARDUINO_USER_DIR)/libraries/U8glib/clib
 
 # KD Edition
-VPATH += /Applications/Arduino.app/Contents/Java/hardware/arduino/avr/libraries/SPI/src/
-VPATH += /Applications/Arduino.app/Contents/Java/libraries/LiquidCrystal/src/
-VPATH += /Users/$(shell whoami)/Documents/Arduino/libraries/U8glib
-VPATH += /Applications/Arduino.app/Contents/Java/hardware/arduino/avr/cores/arduino
-VPATH += /Applications/Arduino.app/Contents/Java/hardware/arduino/avr/variants/mega
-VPATH += /Users/$(shell whoami)/Documents/Arduino/libraries/U8glib/utility
+VPATH += /home/kangdroid/arduino-1.8.10/hardware/arduino/avr/libraries/SPI/src/
+VPATH += /home/kangdroid/arduino-1.8.10/hardware/arduino/avr/libraries/LiquidCrystal/src/
+VPATH += /home/kangdroid/arduino-1.8.10/hardware/arduino/avr/libraries/U8glib-HAL/src
+VPATH += /home/kangdroid/arduino-1.8.10/hardware/arduino/avr/cores/arduino
+VPATH += /home/kangdroid/arduino-1.8.10/hardware/arduino/avr/variants/mega
+VPATH += /home/kangdroid/arduino-1.8.10/hardware/arduino/avr/libraries/U8glib-HAL/src/clib
 
 ifeq ($(HARDWARE_VARIANT), $(filter $(HARDWARE_VARIANT),arduino Teensy Sanguino))
 VPATH += $(ARDUINO_INSTALL_DIR)/hardware/marlin/avr/libraries/LiquidCrystal/src
@@ -639,8 +639,8 @@ OPT = s
 DEFINES ?=
 
 # Program settings
-CC = ccache $(AVR_TOOLS_PATH)avr-gcc
-CXX = ccache $(AVR_TOOLS_PATH)avr-g++
+CC = $(AVR_TOOLS_PATH)avr-gcc
+CXX = $(AVR_TOOLS_PATH)avr-g++
 OBJCOPY = $(AVR_TOOLS_PATH)avr-objcopy
 OBJDUMP = $(AVR_TOOLS_PATH)avr-objdump
 AR  = $(AVR_TOOLS_PATH)avr-ar
@@ -730,8 +730,8 @@ LST = $(LIB_ASRC:.S=.lst) $(LIB_CXXSRC:.cpp=.lst) $(LIB_SRC:.c=.lst)
 
 # Combine all necessary flags and optional flags.
 # Add target processor to flags.
-ALL_CFLAGS = -mmcu=$(MCU) -I. $(CFLAGS)
-ALL_CXXFLAGS = -mmcu=$(MCU) $(CXXFLAGS)
+ALL_CFLAGS = -mmcu=$(MCU) -I. $(CFLAGS) -Wno-unused-parameter -Wno-unused-const-variable -Wno-strict-prototypes
+ALL_CXXFLAGS = -mmcu=$(MCU) $(CXXFLAGS) -Wno-unused-parameter -Wno-unused-const-variable
 ALL_ASFLAGS = -mmcu=$(MCU) -x assembler-with-cpp $(ASFLAGS)
 
 # set V=1 (eg, "make V=1") to print the full commands etc.
