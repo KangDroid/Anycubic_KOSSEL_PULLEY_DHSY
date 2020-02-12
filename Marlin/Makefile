@@ -61,14 +61,14 @@ HARDWARE_MOTHERBOARD ?= 1010
 
 # Arduino source install directory, and version number
 # On most linuxes this will be /usr/share/arduino
-ARDUINO_INSTALL_DIR  ?= /home/kangdroid/arduino-1.8.10
+ARDUINO_INSTALL_DIR  ?= /home/kangdroid/arduino-1.8.11
 ARDUINO_VERSION      ?= 106
 
 # The installed Libraries are in the User folder
-ARDUINO_USER_DIR ?= /Users/$(shell whoami)/Documents/Arduino/libraries 
+ARDUINO_USER_DIR ?= /Users/$(shell whoami)/arduino_library 
 
 # You can optionally set a path to the avr-gcc tools. Requires a trailing slash. (ex: /usr/local/avr-gcc/bin)
-AVR_TOOLS_PATH = /home/kangdroid/arduino-1.8.10/hardware/tools/avr/bin/
+AVR_TOOLS_PATH = /home/kangdroid/arduino-1.8.11/hardware/tools/avr/bin/
 
 #Programmer configuration
 UPLOAD_RATE        ?= 115200
@@ -91,6 +91,9 @@ U8GLIB             ?= 1
 
 # this defines whether to include the Trinamic TMC2630Stepper
 TMC2630            ?= 0
+
+# Enable CCACHE when building firmware. 0 for disable.
+USE_CCACHE_FOR_BUILD = 1
 
 ############
 # Try to automatically determine whether RELOC_WORKAROUND is needed based
@@ -506,16 +509,10 @@ VPATH += $(BUILD_DIR)
 VPATH += $(HARDWARE_SRC)
 
 # U8glib
-VPATH += $(ARDUINO_USER_DIR)/libraries/U8glib
-VPATH += $(ARDUINO_USER_DIR)/libraries/U8glib/clib
-
-# KD Edition
-VPATH += /home/kangdroid/arduino-1.8.10/hardware/arduino/avr/libraries/SPI/src/
-VPATH += /home/kangdroid/arduino-1.8.10/hardware/arduino/avr/libraries/LiquidCrystal/src/
-VPATH += /home/kangdroid/arduino-1.8.10/hardware/arduino/avr/libraries/U8glib-HAL/src
-VPATH += /home/kangdroid/arduino-1.8.10/hardware/arduino/avr/cores/arduino
-VPATH += /home/kangdroid/arduino-1.8.10/hardware/arduino/avr/variants/mega
-VPATH += /home/kangdroid/arduino-1.8.10/hardware/arduino/avr/libraries/U8glib-HAL/src/clib
+VPATH += $(ARDUINO_USER_DIR)/U8glib-HAL/src
+VPATH += $(ARDUINO_USER_DIR)/U8glib-HAL/src/clib
+VPATH += /home/kangdroid/arduino_library/U8glib-HAL/src
+VPATH += /home/kangdroid/arduino_library/U8glib-HAL/src/clib
 
 ifeq ($(HARDWARE_VARIANT), $(filter $(HARDWARE_VARIANT),arduino Teensy Sanguino))
 VPATH += $(ARDUINO_INSTALL_DIR)/hardware/marlin/avr/libraries/LiquidCrystal/src
@@ -639,8 +636,16 @@ OPT = s
 DEFINES ?=
 
 # Program settings
-CC = $(AVR_TOOLS_PATH)avr-gcc
-CXX = $(AVR_TOOLS_PATH)avr-g++
+
+# Enable CCACHE for build if USE_CCACHE_FOR_BUILD
+ifeq ($(USE_CCACHE_FOR_BUILD), 1)
+  CC = ccache $(AVR_TOOLS_PATH)avr-gcc
+  CXX = ccache $(AVR_TOOLS_PATH)avr-g++
+else
+  CC = $(AVR_TOOLS_PATH)avr-gcc
+  CXX = $(AVR_TOOLS_PATH)avr-g++
+endif
+
 OBJCOPY = $(AVR_TOOLS_PATH)avr-objcopy
 OBJDUMP = $(AVR_TOOLS_PATH)avr-objdump
 AR  = $(AVR_TOOLS_PATH)avr-ar
