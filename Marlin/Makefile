@@ -57,18 +57,18 @@
 #
 
 # This defines the board to compile for (see boards.h for your board's ID)
-HARDWARE_MOTHERBOARD ?= 11
+HARDWARE_MOTHERBOARD ?= 1020
 
 # Arduino source install directory, and version number
 # On most linuxes this will be /usr/share/arduino
-ARDUINO_INSTALL_DIR  ?= ${HOME}/Arduino
+ARDUINO_INSTALL_DIR  ?= /home/kangdroid/arduino-1.8.11
 ARDUINO_VERSION      ?= 106
 
 # The installed Libraries are in the User folder
-ARDUINO_USER_DIR ?= ${HOME}/Arduino
+ARDUINO_USER_DIR ?= /Users/$(shell whoami)/arduino_library 
 
 # You can optionally set a path to the avr-gcc tools. Requires a trailing slash. (ex: /usr/local/avr-gcc/bin)
-AVR_TOOLS_PATH ?=
+AVR_TOOLS_PATH ?= /home/kangdroid/arduino-1.8.11/hardware/tools/avr/bin/
 
 #Programmer configuration
 UPLOAD_RATE        ?= 57600
@@ -90,10 +90,13 @@ WIRE               ?= 0
 U8GLIB             ?= 1
 
 # this defines whether to include the Trinamic TMCStepper library
-TMC                ?= 1
+TMC                ?= 0
 
 # this defines whether to include the AdaFruit NeoPixel library
 NEOPIXEL           ?= 0
+
+# Enable CCACHE when building firmware. 0 for disable.
+USE_CCACHE_FOR_BUILD = 1
 
 ############
 # Try to automatically determine whether RELOC_WORKAROUND is needed based
@@ -555,10 +558,10 @@ ifeq ($(NEOPIXEL), 1)
 VPATH += $(ARDUINO_INSTALL_DIR)/libraries/Adafruit_NeoPixel
 endif
 ifeq ($(U8GLIB), 1)
-VPATH += $(ARDUINO_INSTALL_DIR)/libraries/U8glib
-VPATH += $(ARDUINO_INSTALL_DIR)/libraries/U8glib/csrc
-VPATH += $(ARDUINO_INSTALL_DIR)/libraries/U8glib/cppsrc
-VPATH += $(ARDUINO_INSTALL_DIR)/libraries/U8glib/fntsrc
+VPATH += /home/kangdroid/arduino_library/u8glib
+VPATH += /home/kangdroid/arduino_library/u8glib/csrc
+VPATH += /home/kangdroid/arduino_library/u8glib/cppsrc
+VPATH += /home/kangdroid/arduino_library/u8glib/fntsrc
 endif
 ifeq ($(TMC), 1)
 VPATH += $(ARDUINO_INSTALL_DIR)/libraries/TMCStepper/src
@@ -657,8 +660,14 @@ OPT = s
 DEFINES ?=
 
 # Program settings
-CC = $(AVR_TOOLS_PATH)$(TOOL_PREFIX)-gcc
-CXX = $(AVR_TOOLS_PATH)$(TOOL_PREFIX)-g++
+# Enable CCACHE for build if USE_CCACHE_FOR_BUILD
+ifeq ($(USE_CCACHE_FOR_BUILD), 1)
+  CC = ccache $(AVR_TOOLS_PATH)avr-gcc
+  CXX = ccache $(AVR_TOOLS_PATH)avr-g++
+else
+  CC = $(AVR_TOOLS_PATH)avr-gcc
+  CXX = $(AVR_TOOLS_PATH)avr-g++
+endif
 OBJCOPY = $(AVR_TOOLS_PATH)$(TOOL_PREFIX)-objcopy
 OBJDUMP = $(AVR_TOOLS_PATH)$(TOOL_PREFIX)-objdump
 AR  = $(AVR_TOOLS_PATH)$(TOOL_PREFIX)-ar
