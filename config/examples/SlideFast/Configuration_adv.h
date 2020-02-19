@@ -1871,8 +1871,8 @@
   //#define ADVANCED_PAUSE_FANS_PAUSE             // Turn off print-cooling fans while the machine is paused.
 
                                                   // Filament Unload does a Retract, Delay, and Purge first:
-  #define FILAMENT_UNLOAD_PURGE_RETRACT       13  // (mm) Unload initial retract length.
-  #define FILAMENT_UNLOAD_PURGE_DELAY       5000  // (ms) Delay for the filament to cool after retract.
+  #define FILAMENT_UNLOAD_PURGE_RETRACT 0
+  #define FILAMENT_UNLOAD_PURGE_DELAY 500
   #define FILAMENT_UNLOAD_PURGE_LENGTH 0
   #define FILAMENT_UNLOAD_PURGE_FEEDRATE      25  // (mm/s) feedrate to purge before unload
 
@@ -3123,7 +3123,3 @@
 
 // Enable Marlin dev mode which adds some special commands
 //#define MARLIN_DEV_MODE
-#define X_PROBE_OFFSET_FROM_EXTRUDER 0
-#define Y_PROBE_OFFSET_FROM_EXTRUDER 0
-#define FILAMENT_UNLOAD_RETRACT_LENGTH 0
-#define FILAMENT_UNLOAD_DELAY 500

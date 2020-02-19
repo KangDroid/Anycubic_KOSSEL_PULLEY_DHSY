@@ -3123,5 +3123,3 @@
 
 // Enable Marlin dev mode which adds some special commands
 //#define MARLIN_DEV_MODE
-#define X_PROBE_OFFSET_FROM_EXTRUDER 0
-#define Y_PROBE_OFFSET_FROM_EXTRUDER 0
