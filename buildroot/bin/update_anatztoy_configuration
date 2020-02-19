@@ -1,0 +1,34 @@
+#!/bin/bash
+
+restore_configs
+
+opt_set DEFAULT_AXIS_STEPS_PER_UNIT "{ 80, 80, 1600, 98.05 }"
+opt_set DEFAULT_MAX_FEEDRATE "{ 200, 200, 3, 1000 }"
+opt_set DEFAULT_MAX_ACCELERATION "{ 3000, 3000, 1000, 10000 }"
+opt_set DEFAULT_ACCELERATION 800
+opt_set DEFAULT_RETRACT_ACCELERATION 3000
+opt_set DEFAULT_TRAVEL_ACCELERATION 800
+opt_set INVERT_X_DIR "true"
+opt_set INVERT_E0_DIR "true"
+opt_enable CLASSIC_JERK
+opt_set DEFAULT_XJERK "8.0"
+opt_set DEFAULT_YJERK "8.0"
+opt_set DEFAULT_ZJERK "0.4"
+opt_set DEFAULT_EJERK "5.0"
+opt_enable MESH_BED_LEVELING
+opt_enable LCD_BED_LEVELING
+opt_enable EEPROM_SETTINGS
+opt_enable MESH_EDIT_MENU
+opt_enable SDSUPPORT
+opt_enable INDIVIDUAL_AXIS_HOMING_MENU
+opt_enable REPRAP_DISCOUNT_SMART_CONTROLLER
+opt_set DEFAULT_NOMINAL_FILAMENT_DIA "1.75"
+opt_enable SOFT_ENDSTOPS_MENU_ITEM
+opt_set X_BED_SIZE 90
+opt_set Y_BED_SIZE 80
+opt_set Z_MAX_POS 70
+opt_set GRID_MAX_POINTS_X 2
+
+rm -rf config/examples/anatztoy/*
+cp Marlin/Configuration* config/examples/anatztoy/
+restore_configs
