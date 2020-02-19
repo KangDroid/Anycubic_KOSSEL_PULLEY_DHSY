@@ -71,10 +71,10 @@ ARDUINO_USER_DIR ?= /Users/$(shell whoami)/arduino_library
 AVR_TOOLS_PATH ?= /home/kangdroid/arduino-1.8.11/hardware/tools/avr/bin/
 
 #Programmer configuration
-UPLOAD_RATE        ?= 57600
-AVRDUDE_PROGRAMMER ?= arduino
+UPLOAD_RATE        ?= 115200
+AVRDUDE_PROGRAMMER ?= wiring
 # on most linuxes this will be /dev/ttyACM0 or /dev/ttyACM1
-UPLOAD_PORT        ?= /dev/ttyUSB0
+UPLOAD_PORT        ?= COM3
 
 #Directory used to build files in, contains all the build files, from object files to the final hex file
 #on linux it is best to put an absolute path like /home/username/tmp .
@@ -673,7 +673,7 @@ OBJDUMP = $(AVR_TOOLS_PATH)$(TOOL_PREFIX)-objdump
 AR  = $(AVR_TOOLS_PATH)$(TOOL_PREFIX)-ar
 SIZE = $(AVR_TOOLS_PATH)$(TOOL_PREFIX)-size
 NM = $(AVR_TOOLS_PATH)$(TOOL_PREFIX)-nm
-AVRDUDE = avrdude
+AVRDUDE = "/mnt/c/Program Files (x86)/Arduino/hardware/tools/avr/bin/avrdude.exe"
 REMOVE = rm -f
 MV = mv -f
 
@@ -732,9 +732,9 @@ endif
 
 # Programming support using avrdude. Settings and variables.
 AVRDUDE_PORT = $(UPLOAD_PORT)
-AVRDUDE_WRITE_FLASH = -Uflash:w:$(BUILD_DIR)/$(TARGET).hex:i
+AVRDUDE_WRITE_FLASH = -Uflash:w:$(BUILD_DIR)/$(TARGET).hex
 ifeq ($(shell uname -s), Linux)
-  AVRDUDE_CONF = /etc/avrdude/avrdude.conf
+  AVRDUDE_CONF = /home/kangdroid/avrdude.conf
 else
   AVRDUDE_CONF = $(ARDUINO_INSTALL_DIR)/hardware/tools/avr/etc/avrdude.conf
 endif
