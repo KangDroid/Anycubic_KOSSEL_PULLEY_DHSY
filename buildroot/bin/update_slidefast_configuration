@@ -1,4 +1,6 @@
 #!/bin/bash
+restore_configs
+
 opt_set TEMP_SENSOR_BED 1
 opt_enable PID_AUTOTUNE_MENU
 opt_disable USE_ZMIN_PLUG
@@ -70,5 +72,6 @@ opt_set Y_DRIVER_TYPE "TMC2100"
 opt_set Z_DRIVER_TYPE "TMC2100"
 opt_set E0_DRIVER_TYPE "TMC2208_STANDALONE"
 
+rm -rf config/examples/SlideFast/*
 cp Marlin/Configuration* config/examples/SlideFast/
 restore_configs

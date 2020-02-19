@@ -1,4 +1,6 @@
 #!/bin/bash
+restore_configs
+
 opt_set DEFAULT_NOMINAL_FILAMENT_DIA "1.75"
 opt_set TEMP_SENSOR_BED 1
 opt_enable PID_AUTOTUNE_MENU
@@ -68,5 +70,6 @@ opt_set THERMAL_PROTECTION_BED_HYSTERESIS 15
 opt_set THERMAL_PROTECTION_BED_PERIOD 120
 opt_set WATCH_BED_TEMP_PERIOD 120
 
+rm -rf config/examples/Mieum/*
 cp Marlin/Configuration* config/examples/Mieum/
 restore_configs

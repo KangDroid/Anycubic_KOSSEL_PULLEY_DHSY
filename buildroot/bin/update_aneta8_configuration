@@ -1,4 +1,6 @@
 #!/bin/sh
+restore_configs
+
 opt_set TEMP_SENSOR_0 5
 opt_set TEMP_SENSOR_BED 5
 opt_set X_MIN_ENDSTOP_INVERTING "true"
@@ -38,5 +40,7 @@ opt_enable SDSUPPORT
 opt_enable REPRAP_DISCOUNT_SMART_CONTROLLER
 opt_set HOMING_FEEDRATE_XY "(100*60)"
 opt_set NUM_Z_STEPPER_DRIVERS 2
+
+rm -rf config/examples/AnetA8/*
 cp Marlin/Configuration* config/examples/AnetA8/
 restore_configs

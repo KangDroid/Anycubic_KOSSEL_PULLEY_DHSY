@@ -1,4 +1,6 @@
 #!/bin/sh
+restore_configs
+
 opt_set TEMP_SENSOR_BED 4
 opt_enable PID_AUTOTUNE_MENU
 opt_set DEFAULT_Kp 23.29
@@ -38,5 +40,6 @@ opt_enable REPRAP_DISCOUNT_SMART_CONTROLLER
 opt_enable EMERGENCY_PARSER
 opt_enable ADVANCED_PAUSE_FEATURE
 
+rm -rf config/examples/Core200/*
 cp Marlin/Configuration* config/examples/Core200/
 restore_configs
