@@ -1,0 +1,22 @@
+name: C/C++ CI
+
+on: [push]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v2
+    - name: Arduino Configs
+      run: |
+        wget https://www.arduino.cc/download.php?f=/arduino-nightly-linux64.tar.xz
+        tar -xvf *.tar.xz
+        pwd
+    - name: Core M Configs
+      run: |
+        export PATH=$PATH:buildroot/bin
+        buildroot/bin/update_corem_configuration
+        cd Marlin
+        make ARDUINO_INSTALL_DIR=../arduino-nightly AVR_TOOLS_PATH=../arduino-nightly/hardware/tools/avr/bin/ USE_CCACHE_FOR_BUILD=0 -j12

@@ -87,7 +87,7 @@ LIQUID_TWI2        ?= 0
 WIRE               ?= 0
 
 # this defines if U8GLIB is needed (may require RELOC_WORKAROUND)
-U8GLIB             ?= 1
+U8GLIB             ?= 0
 
 # this defines whether to include the Trinamic TMCStepper library
 TMC                ?= 0
@@ -562,6 +562,11 @@ VPATH += /home/kangdroid/arduino_library/u8glib
 VPATH += /home/kangdroid/arduino_library/u8glib/csrc
 VPATH += /home/kangdroid/arduino_library/u8glib/cppsrc
 VPATH += /home/kangdroid/arduino_library/u8glib/fntsrc
+# For CI Build
+VPATH += /home/runner/work/Marlin/Marlin/u8glib
+VPATH += /home/runner/work/Marlin/Marlin/u8glib/csrc
+VPATH += /home/runner/work/Marlin/Marlin/u8glib/cppsrc
+VPATH += /home/runner/work/Marlin/Marlin/u8glib/fntsrc
 endif
 ifeq ($(TMC), 1)
 VPATH += $(ARDUINO_INSTALL_DIR)/libraries/TMCStepper/src
