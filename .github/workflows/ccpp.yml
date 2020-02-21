@@ -14,9 +14,43 @@ jobs:
         wget https://www.arduino.cc/download.php?f=/arduino-nightly-linux64.tar.xz
         tar -xvf *.tar.xz
         pwd
-    - name: Core M Configs
+    - name: Core M Config
       run: |
         export PATH=$PATH:buildroot/bin
         buildroot/bin/update_corem_configuration
         cd Marlin
+        make clean
         make ARDUINO_INSTALL_DIR=../arduino-nightly AVR_TOOLS_PATH=../arduino-nightly/hardware/tools/avr/bin/ USE_CCACHE_FOR_BUILD=0 -j12
+        cd ..
+    - name: Mieum(Private) Config
+      run: |
+        export PATH=$PATH:buildroot/bin
+        buildroot/bin/update_mieum_configuration
+        cd Marlin
+        make clean
+        make ARDUINO_INSTALL_DIR=../arduino-nightly AVR_TOOLS_PATH=../arduino-nightly/hardware/tools/avr/bin/ USE_CCACHE_FOR_BUILD=0 -j12
+        cd ..
+    - name: Anatz TOY Printer Config
+      run: |
+        export PATH=$PATH:buildroot/bin
+        buildroot/bin/update_anatztoy_configuration
+        cd Marlin
+        make clean
+        make ARDUINO_INSTALL_DIR=../arduino-nightly AVR_TOOLS_PATH=../arduino-nightly/hardware/tools/avr/bin/ USE_CCACHE_FOR_BUILD=0 -j12
+        cd ..
+    - name: Core 200 Printer Config
+      run: |
+        export PATH=$PATH:buildroot/bin
+        buildroot/bin/update_core200_configuration
+        cd Marlin
+        make clean
+        make ARDUINO_INSTALL_DIR=../arduino-nightly AVR_TOOLS_PATH=../arduino-nightly/hardware/tools/avr/bin/ USE_CCACHE_FOR_BUILD=0 -j12
+        cd ..
+    - name: SlideFast Printer Config
+      run: |
+        export PATH=$PATH:buildroot/bin
+        buildroot/bin/update_slidefast_configuration
+        cd Marlin
+        make clean
+        make ARDUINO_INSTALL_DIR=../arduino-nightly AVR_TOOLS_PATH=../arduino-nightly/hardware/tools/avr/bin/ USE_CCACHE_FOR_BUILD=0 -j12
+        cd ..
