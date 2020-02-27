@@ -645,7 +645,7 @@
     #define MINIMUM_STEPPER_PULSE 2
   #elif HAS_DRIVER(A4988) || HAS_DRIVER(A5984)
     #define MINIMUM_STEPPER_PULSE 1
-  #elif TRINAMICS
+  #elif HAS_TRINAMIC || HAS_TRINAMIC_STANDALONE
     #define MINIMUM_STEPPER_PULSE 0
   #elif HAS_DRIVER(LV8729)
     #define MINIMUM_STEPPER_PULSE 0
@@ -665,7 +665,7 @@
     #define MAXIMUM_STEPPER_RATE 500000
   #elif HAS_DRIVER(LV8729)
     #define MAXIMUM_STEPPER_RATE 1000000
-  #elif TRINAMICS
+  #elif HAS_TRINAMIC || HAS_TRINAMIC_STANDALONE
     #define MAXIMUM_STEPPER_RATE 5000000
   #else
     #define MAXIMUM_STEPPER_RATE 250000
@@ -1444,59 +1444,6 @@
 #define HAS_Z4_MAX (PIN_EXISTS(Z4_MAX))
 #define HAS_Z_MIN_PROBE_PIN (HAS_CUSTOM_PROBE_PIN && PIN_EXISTS(Z_MIN_PROBE))
 
-// Cannot use a macro with a defined() statement inside REPEAT macros.
-// [AXIS]_HARDWARE_SERIAL definitions are typically strings which cannot be
-// tested directly, as they will evaluate to 0.
-#ifdef X_HARDWARE_SERIAL
-  #define HAS_X_HARDWARE_SERIAL 1
-#endif
-#ifdef X2_HARDWARE_SERIAL
-  #define HAS_X2_HARDWARE_SERIAL 1
-#endif
-#ifdef Y_HARDWARE_SERIAL
-  #define HAS_Y_HARDWARE_SERIAL 1
-#endif
-#ifdef Y2_HARDWARE_SERIAL
-  #define HAS_Y2_HARDWARE_SERIAL 1
-#endif
-#ifdef Z_HARDWARE_SERIAL
-  #define HAS_Z_HARDWARE_SERIAL 1
-#endif
-#ifdef Z2_HARDWARE_SERIAL
-  #define HAS_Z2_HARDWARE_SERIAL 1
-#endif
-#ifdef Z3_HARDWARE_SERIAL
-  #define HAS_Z3_HARDWARE_SERIAL 1
-#endif
-#ifdef Z4_HARDWARE_SERIAL
-  #define HAS_Z4_HARDWARE_SERIAL 1
-#endif
-#ifdef E0_HARDWARE_SERIAL
-  #define HAS_E0_HARDWARE_SERIAL 1
-#endif
-#ifdef E1_HARDWARE_SERIAL
-  #define HAS_E1_HARDWARE_SERIAL 1
-#endif
-#ifdef E2_HARDWARE_SERIAL
-  #define HAS_E2_HARDWARE_SERIAL 1
-#endif
-#ifdef E3_HARDWARE_SERIAL
-  #define HAS_E3_HARDWARE_SERIAL 1
-#endif
-#ifdef E4_HARDWARE_SERIAL
-  #define HAS_E4_HARDWARE_SERIAL 1
-#endif
-#ifdef E5_HARDWARE_SERIAL
-  #define HAS_E5_HARDWARE_SERIAL 1
-#endif
-#ifdef E6_HARDWARE_SERIAL
-  #define HAS_E6_HARDWARE_SERIAL 1
-#endif
-#ifdef E7_HARDWARE_SERIAL
-  #define HAS_E7_HARDWARE_SERIAL 1
-#endif
-
-
 //
 // ADC Temp Sensors (Thermistor or Thermocouple with amplifier ADC interface)
 //
@@ -1598,16 +1545,6 @@
 #define HAS_SERVO_2 (PIN_EXISTS(SERVO2) && NUM_SERVOS > 2)
 #define HAS_SERVO_3 (PIN_EXISTS(SERVO3) && NUM_SERVOS > 3)
 #define HAS_SERVOS  (NUM_SERVOS > 0)
-
-#if HAS_SERVOS && !defined(Z_PROBE_SERVO_NR)
-  #define Z_PROBE_SERVO_NR -1
-#endif
-
-#define HAS_SERVO_ANGLES (EITHER(SWITCHING_EXTRUDER, SWITCHING_NOZZLE) || (HAS_Z_SERVO_PROBE && defined(Z_PROBE_SERVO_NR)))
-
-#if !HAS_SERVO_ANGLES || ENABLED(BLTOUCH)
-  #undef EDITABLE_SERVO_ANGLES
-#endif
 
 // Sensors
 #define HAS_FILAMENT_WIDTH_SENSOR (PIN_EXISTS(FILWIDTH))
