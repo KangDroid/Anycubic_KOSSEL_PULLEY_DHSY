@@ -61,14 +61,14 @@ HARDWARE_MOTHERBOARD ?= 1020
 
 # Arduino source install directory, and version number
 # On most linuxes this will be /usr/share/arduino
-ARDUINO_INSTALL_DIR  ?= /home/kangdroid/arduino-1.8.11
+ARDUINO_INSTALL_DIR  ?= /Applications/Arduino.app/Contents/Resources/Java
 ARDUINO_VERSION      ?= 106
 
 # The installed Libraries are in the User folder
 ARDUINO_USER_DIR ?= /Users/$(shell whoami)/arduino_library 
 
 # You can optionally set a path to the avr-gcc tools. Requires a trailing slash. (ex: /usr/local/avr-gcc/bin)
-AVR_TOOLS_PATH ?= /home/kangdroid/arduino-1.8.11/hardware/tools/avr/bin/
+AVR_TOOLS_PATH ?= /Applications/Arduino.app/Contents/Java/hardware/tools/avr/bin/
 
 #Programmer configuration
 UPLOAD_RATE        ?= 115200
@@ -96,7 +96,7 @@ TMC                ?= 0
 NEOPIXEL           ?= 0
 
 # Enable CCACHE when building firmware. 0 for disable.
-USE_CCACHE_FOR_BUILD = 1
+USE_CCACHE_FOR_BUILD = 0
 
 ############
 # Try to automatically determine whether RELOC_WORKAROUND is needed based
@@ -574,10 +574,10 @@ ifeq ($(NEOPIXEL), 1)
 VPATH += $(ARDUINO_INSTALL_DIR)/libraries/Adafruit_NeoPixel
 endif
 ifeq ($(U8GLIB), 1)
-VPATH += /home/kangdroid/arduino_library/u8glib
-VPATH += /home/kangdroid/arduino_library/u8glib/csrc
-VPATH += /home/kangdroid/arduino_library/u8glib/cppsrc
-VPATH += /home/kangdroid/arduino_library/u8glib/fntsrc
+VPATH += /tmp/Marlin/u8glib-master
+VPATH += /tmp/Marlin/u8glib-master/csrc
+VPATH += /tmp/Marlin/u8glib-master/cppsrc
+VPATH += /tmp/Marlin/u8glib-master/fntsrc
 # For CI Build
 VPATH += /home/runner/work/Marlin/Marlin/u8glib
 VPATH += /home/runner/work/Marlin/Marlin/u8glib/csrc
@@ -611,6 +611,11 @@ else
   HARDWARE_SUB_VARIANT ?= standard
   VPATH += $(ARDUINO_INSTALL_DIR)/hardware/$(HARDWARE_VARIANT)/variants/$(HARDWARE_SUB_VARIANT)
 endif
+
+VPATH += /Applications/Arduino.app/Contents/Java/hardware/arduino/avr/libraries/SPI/src/
+VPATH += /Applications/Arduino.app/Contents/Java/libraries/LiquidCrystal/src/
+VPATH += /Applications/Arduino.app/Contents/Java/hardware/arduino/avr/cores/arduino
+VPATH += /Applications/Arduino.app/Contents/Java/hardware/arduino/avr/variants/mega
 
 LIB_SRC = wiring.c \
   wiring_analog.c wiring_digital.c \
