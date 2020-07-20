@@ -13,44 +13,61 @@ jobs:
       run: |
         wget https://www.arduino.cc/download.php?f=/arduino-nightly-linux64.tar.xz
         tar -xvf *.tar.xz
+        git clone https://github.com/IncoCura/IncoFWUpdate
         pwd
     - name: Core M Config
       run: |
         export PATH=$PATH:buildroot/bin
-        buildroot/bin/update_corem_configuration
+        use_example_configs Corem
         cd Marlin
         make clean
         make ARDUINO_INSTALL_DIR=../arduino-nightly AVR_TOOLS_PATH=../arduino-nightly/hardware/tools/avr/bin/ USE_CCACHE_FOR_BUILD=0 -j12
+        mv applet/Marlin.hex ../IncoFWUpdate/CoreM/CoreM_$(date "+%Y%m%d%H").hex
         cd ..
-    - name: Mieum(Private) Config
+    # - name: Mieum(Private) Config
+    #   run: |
+    #     export PATH=$PATH:buildroot/bin
+    #     use_example_configs Mieum
+    #     cd Marlin
+    #     make clean
+    #     make ARDUINO_INSTALL_DIR=../arduino-nightly AVR_TOOLS_PATH=../arduino-nightly/hardware/tools/avr/bin/ USE_CCACHE_FOR_BUILD=0 -j12
+    #     mv applet/Marlin.hex ../IncoFWUpdate/Mieum_HomePV/Mieum_HomePV_$(date "+%Y%m%d%H").hex
+    #     cd ..
+    # - name: Anatz TOY Printer Config
+    #   run: |
+    #     export PATH=$PATH:buildroot/bin
+    #     use_example_configs anatztoy
+    #     cd Marlin
+    #     make clean
+    #     make ARDUINO_INSTALL_DIR=../arduino-nightly AVR_TOOLS_PATH=../arduino-nightly/hardware/tools/avr/bin/ USE_CCACHE_FOR_BUILD=0 -j12
+    #     mv applet/Marlin.hex ../IncoFWUpdate/AnatzToy/AnatzToy_$(date "+%Y%m%d%H").hex
+    #     cd ..
+    # - name: Core 200 Printer Config
+    #   run: |
+    #     export PATH=$PATH:buildroot/bin
+    #     use_example_configs Core200
+    #     cd Marlin
+    #     make clean
+    #     make ARDUINO_INSTALL_DIR=../arduino-nightly AVR_TOOLS_PATH=../arduino-nightly/hardware/tools/avr/bin/ USE_CCACHE_FOR_BUILD=0 -j12
+    #     mv applet/Marlin.hex ../IncoFWUpdate/Core200/Core200_$(date "+%Y%m%d%H").hex
+    #     cd ..
+    # - name: SlideFast Printer Config
+    #   run: |
+    #     export PATH=$PATH:buildroot/bin
+    #     use_example_configs SlideFast
+    #     cd Marlin
+    #     make clean
+    #     make ARDUINO_INSTALL_DIR=../arduino-nightly AVR_TOOLS_PATH=../arduino-nightly/hardware/tools/avr/bin/ USE_CCACHE_FOR_BUILD=0 -j12
+    #     mv applet/Marlin.hex ../IncoFWUpdate/SlideFast/SlideFast_$(date "+%Y%m%d%H").hex
+    #     cd ..
+    - name: Commit files
       run: |
-        export PATH=$PATH:buildroot/bin
-        buildroot/bin/update_mieum_configuration
-        cd Marlin
-        make clean
-        make ARDUINO_INSTALL_DIR=../arduino-nightly AVR_TOOLS_PATH=../arduino-nightly/hardware/tools/avr/bin/ USE_CCACHE_FOR_BUILD=0 -j12
-        cd ..
-    - name: Anatz TOY Printer Config
-      run: |
-        export PATH=$PATH:buildroot/bin
-        buildroot/bin/update_anatztoy_configuration
-        cd Marlin
-        make clean
-        make ARDUINO_INSTALL_DIR=../arduino-nightly AVR_TOOLS_PATH=../arduino-nightly/hardware/tools/avr/bin/ USE_CCACHE_FOR_BUILD=0 -j12
-        cd ..
-    - name: Core 200 Printer Config
-      run: |
-        export PATH=$PATH:buildroot/bin
-        buildroot/bin/update_core200_configuration
-        cd Marlin
-        make clean
-        make ARDUINO_INSTALL_DIR=../arduino-nightly AVR_TOOLS_PATH=../arduino-nightly/hardware/tools/avr/bin/ USE_CCACHE_FOR_BUILD=0 -j12
-        cd ..
-    - name: SlideFast Printer Config
-      run: |
-        export PATH=$PATH:buildroot/bin
-        buildroot/bin/update_slidefast_configuration
-        cd Marlin
-        make clean
-        make ARDUINO_INSTALL_DIR=../arduino-nightly AVR_TOOLS_PATH=../arduino-nightly/hardware/tools/avr/bin/ USE_CCACHE_FOR_BUILD=0 -j12
-        cd ..
+        cd IncoFWUpdate
+        git config --global user.name "github-actions[bot]"
+        git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        git add -A
+        git commit -am "$(date "+%Y%m%d%H%M")[CRON]: Update Hex files"
+    - name: Push changes
+      uses: ad-m/github-push-action@master
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
