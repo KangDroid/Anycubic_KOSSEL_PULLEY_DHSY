@@ -1,56 +1,137 @@
 name: C/C++ CI
 
-on: [push]
+on: 
+  schedule:
+    # Every hour
+    - cron:  '0 * * * *'
+  push:
 
 jobs:
-  build:
-
+  BuildCoreM:
     runs-on: ubuntu-latest
-    
     steps:
     - uses: actions/checkout@v2
     - name: Arduino Configs
       run: |
         wget https://www.arduino.cc/download.php?f=/arduino-nightly-linux64.tar.xz
         tar -xvf *.tar.xz
+        git clone https://github.com/IncoCura/IncoFWUpdate
+        mkdir -p ~/output
         pwd
     - name: Core M Config
       run: |
         export PATH=$PATH:buildroot/bin
-        buildroot/bin/update_corem_configuration
+        use_example_configs Corem
         cd Marlin
         make clean
         make ARDUINO_INSTALL_DIR=../arduino-nightly AVR_TOOLS_PATH=../arduino-nightly/hardware/tools/avr/bin/ USE_CCACHE_FOR_BUILD=0 -j12
+        mv applet/Marlin.hex ~/output/CoreM_$(date "+%Y%m%d%H").hex
         cd ..
+    - name: Upload Build artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: CoreMHex
+        path: '~/output/CoreM_*.hex'
+  BuildMieum:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Arduino Configs
+      run: |
+        wget https://www.arduino.cc/download.php?f=/arduino-nightly-linux64.tar.xz
+        tar -xvf *.tar.xz
+        git clone https://github.com/IncoCura/IncoFWUpdate
+        mkdir -p ~/output
+        pwd
     - name: Mieum(Private) Config
       run: |
         export PATH=$PATH:buildroot/bin
-        buildroot/bin/update_mieum_configuration
+        use_example_configs Mieum
         cd Marlin
         make clean
         make ARDUINO_INSTALL_DIR=../arduino-nightly AVR_TOOLS_PATH=../arduino-nightly/hardware/tools/avr/bin/ USE_CCACHE_FOR_BUILD=0 -j12
+        mv applet/Marlin.hex  ~/output/Mieum_HomePV_$(date "+%Y%m%d%H").hex
         cd ..
+    - name: Upload Build artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: MieumHex
+        path: '~/output/Mieum*.hex'
+    
+  BuildAnatzToy:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Arduino Configs
+      run: |
+        wget https://www.arduino.cc/download.php?f=/arduino-nightly-linux64.tar.xz
+        tar -xvf *.tar.xz
+        git clone https://github.com/IncoCura/IncoFWUpdate
+        mkdir -p ~/output
+        pwd
     - name: Anatz TOY Printer Config
       run: |
         export PATH=$PATH:buildroot/bin
-        buildroot/bin/update_anatztoy_configuration
+        use_example_configs anatztoy
         cd Marlin
         make clean
         make ARDUINO_INSTALL_DIR=../arduino-nightly AVR_TOOLS_PATH=../arduino-nightly/hardware/tools/avr/bin/ USE_CCACHE_FOR_BUILD=0 -j12
+        mv applet/Marlin.hex ~/output/AnatzToy_$(date "+%Y%m%d%H").hex
         cd ..
+    - name: Upload Build artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: AnatzToyHex
+        path: '~/output/AnatzToy_*.hex'
+  
+  BuildCore200:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Arduino Configs
+      run: |
+        wget https://www.arduino.cc/download.php?f=/arduino-nightly-linux64.tar.xz
+        tar -xvf *.tar.xz
+        git clone https://github.com/IncoCura/IncoFWUpdate
+        mkdir -p ~/output
+        pwd
     - name: Core 200 Printer Config
       run: |
         export PATH=$PATH:buildroot/bin
-        buildroot/bin/update_core200_configuration
+        use_example_configs Core200
         cd Marlin
         make clean
         make ARDUINO_INSTALL_DIR=../arduino-nightly AVR_TOOLS_PATH=../arduino-nightly/hardware/tools/avr/bin/ USE_CCACHE_FOR_BUILD=0 -j12
+        mv applet/Marlin.hex ~/output/Core200_$(date "+%Y%m%d%H").hex
         cd ..
+    - name: Upload Build artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: Core200Hex
+        path: '~/output/Core200_*.hex'
+
+  BuildSlideFast:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Arduino Configs
+      run: |
+        wget https://www.arduino.cc/download.php?f=/arduino-nightly-linux64.tar.xz
+        tar -xvf *.tar.xz
+        git clone https://github.com/IncoCura/IncoFWUpdate
+        mkdir -p ~/output
+        pwd
     - name: SlideFast Printer Config
       run: |
         export PATH=$PATH:buildroot/bin
-        buildroot/bin/update_slidefast_configuration
+        use_example_configs SlideFast
         cd Marlin
         make clean
         make ARDUINO_INSTALL_DIR=../arduino-nightly AVR_TOOLS_PATH=../arduino-nightly/hardware/tools/avr/bin/ USE_CCACHE_FOR_BUILD=0 -j12
+        mv applet/Marlin.hex ~/output/SlideFast_$(date "+%Y%m%d%H").hex
         cd ..
+    - name: Upload Build artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: SlideFastHex
+        path: '~/output/SlideFast_*.hex'
