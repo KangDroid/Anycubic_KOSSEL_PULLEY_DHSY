@@ -130,6 +130,7 @@ jobs:
         make ARDUINO_INSTALL_DIR=../arduino-nightly AVR_TOOLS_PATH=../arduino-nightly/hardware/tools/avr/bin/ USE_CCACHE_FOR_BUILD=0 -j12
         mv applet/Marlin.hex ~/output/SlideFast_$(date "+%Y%m%d%H").hex
         cd ..
+        ls ~/output/
     - name: Upload Build artifact
       uses: actions/upload-artifact@v2
       with:
