@@ -699,7 +699,7 @@ OBJDUMP = $(AVR_TOOLS_PATH)$(TOOL_PREFIX)-objdump
 AR  = $(AVR_TOOLS_PATH)$(TOOL_PREFIX)-ar
 SIZE = $(AVR_TOOLS_PATH)$(TOOL_PREFIX)-size
 NM = $(AVR_TOOLS_PATH)$(TOOL_PREFIX)-nm
-AVRDUDE = "/mnt/c/Program Files (x86)/Arduino/hardware/tools/avr/bin/avrdude.exe"
+AVRDUDE = "/Applications/Arduino.app/Contents/Java/hardware/tools/avr/bin/avrdude"
 REMOVE = rm -f
 MV = mv -f
 
@@ -762,7 +762,7 @@ AVRDUDE_WRITE_FLASH = -Uflash:w:$(BUILD_DIR)/$(TARGET).hex
 ifeq ($(shell uname -s), Linux)
   AVRDUDE_CONF = /home/kangdroid/avrdude.conf
 else
-  AVRDUDE_CONF = $(ARDUINO_INSTALL_DIR)/hardware/tools/avr/etc/avrdude.conf
+  AVRDUDE_CONF = "/Applications/Arduino.app/Contents/Java/hardware/tools/avr/etc/avrdude.conf"
 endif
 AVRDUDE_FLAGS = -D -C$(AVRDUDE_CONF) \
   -p$(MCU) -P$(AVRDUDE_PORT) -c$(AVRDUDE_PROGRAMMER) \
