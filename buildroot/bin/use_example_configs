@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 
-restore_configs
+IFS=: read -r PART1 PART2 <<< "$@"
+[ -n "${PART2}" ] && { REPO="$PART1" ; RDIR="$PART2" ; } \
+                  || { REPO=bugfix-2.0.x   ; RDIR="$PART1" ; }
+EXAMPLES="https://raw.githubusercontent.com/MarlinFirmware/Configurations/$REPO/config/examples"
 
 if [ -f "config/examples/$@/Configuration.h" ]; then
   cp "config/examples/$@/Configuration.h" Marlin/

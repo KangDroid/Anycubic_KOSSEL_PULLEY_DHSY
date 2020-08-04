@@ -29,10 +29,6 @@
   #error "EMERGENCY_PARSER is not yet implemented for STM32F1. Disable EMERGENCY_PARSER to continue."
 #endif
 
-#if ENABLED(SDIO_SUPPORT) && DISABLED(SDSUPPORT)
-  #error "SDIO_SUPPORT requires SDSUPPORT. Enable SDSUPPORT to continue."
-#endif
-
 #if ENABLED(FAST_PWM_FAN)
   #error "FAST_PWM_FAN is not yet implemented for this platform."
 #endif
@@ -54,4 +50,8 @@
   #error "SERIAL_STATS_MAX_RX_QUEUED is not supported on this platform."
 #elif ENABLED(SERIAL_STATS_DROPPED_RX)
   #error "SERIAL_STATS_DROPPED_RX is not supported on this platform."
+#endif
+
+#if ENABLED(NEOPIXEL_LED)
+  #error "NEOPIXEL_LED (Adafruit NeoPixel) is not supported for HAL/STM32F1. Comment out this line to proceed at your own risk!"
 #endif
