@@ -25,6 +25,8 @@ opt_set Z_MAX_POS "170"
 opt_enable SOFT_ENDSTOPS_MENU_ITEM
 #opt_enable FILAMENT_RUNOUT_SENSOR
 #opt_enable Z_SAFE_HOMING
+opt_set X_BED_SIZE "200"
+opt_set Y_BED_SIZE "200"
 opt_enable NOZZLE_PARK_FEATURE
 opt_set HOMING_FEEDRATE_Z "(500)"
 opt_enable EEPROM_SETTINGS
