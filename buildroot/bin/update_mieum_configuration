@@ -27,11 +27,7 @@ opt_enable SOFT_ENDSTOPS_MENU_ITEM
 #opt_enable Z_SAFE_HOMING
 opt_enable NOZZLE_PARK_FEATURE
 opt_set HOMING_FEEDRATE_Z "(500)"
-opt_enable MESH_BED_LEVELING
-opt_enable LCD_BED_LEVELING
 opt_enable EEPROM_SETTINGS
-opt_enable MESH_EDIT_MENU
-opt_set GRID_MAX_POINTS_X 2
 opt_set PREHEAT_1_TEMP_HOTEND "190"
 opt_set PREHEAT_1_TEMP_BED "65"
 opt_enable SDSUPPORT
