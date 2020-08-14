@@ -1,10 +1,6 @@
 name: C/C++ CI
 
-on: 
-  schedule:
-    # Every day
-    - cron:  '0 0 * * *'
-  push:
+on: [push]
 
 jobs:
   BuildCoreM:
